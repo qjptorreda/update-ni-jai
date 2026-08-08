@@ -133,64 +133,55 @@ namespace RescuAR.App.ViewModels.Authentication
             // Validate Fields
             if (string.IsNullOrWhiteSpace(FirstName))
             {
-                ErrorMessage = "Full Name (First Name) is required.";
-                OnPropertyChanged(nameof(HasError));
+                await ShowErrorAsync("Full Name (First Name) is required.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(LastName))
             {
-                ErrorMessage = "Last Name is required.";
-                OnPropertyChanged(nameof(HasError));
+                await ShowErrorAsync("Last Name is required.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(Email))
             {
-                ErrorMessage = "Email Address is required.";
-                OnPropertyChanged(nameof(HasError));
+                await ShowErrorAsync("Email Address is required.");
                 return;
             }
 
             if (!IsValidEmail(Email))
             {
-                ErrorMessage = "Please enter a valid email address.";
-                OnPropertyChanged(nameof(HasError));
+                await ShowErrorAsync("Please enter a valid email address.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(ContactNumber))
             {
-                ErrorMessage = "Contact Number is required.";
-                OnPropertyChanged(nameof(HasError));
+                await ShowErrorAsync("Contact Number is required.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(Password))
             {
-                ErrorMessage = "Password is required.";
-                OnPropertyChanged(nameof(HasError));
+                await ShowErrorAsync("Password is required.");
                 return;
             }
 
             if (!HasMinLength || !HasSpecialChar || !HasDigit || !HasUpperCase)
             {
-                ErrorMessage = "Please meet all the password requirements.";
-                OnPropertyChanged(nameof(HasError));
+                await ShowErrorAsync("Please meet all the password requirements.");
                 return;
             }
 
             if (Password != ConfirmPassword)
             {
-                ErrorMessage = "Passwords do not match.";
-                OnPropertyChanged(nameof(HasError));
+                await ShowErrorAsync("Passwords do not match.");
                 return;
             }
 
             if (!IsTermsAccepted)
             {
-                ErrorMessage = "You must agree to the Terms & Conditions and Privacy Policy.";
-                OnPropertyChanged(nameof(HasError));
+                await ShowErrorAsync("You must agree to the Terms & Conditions and Privacy Policy.");
                 return;
             }
 
@@ -227,19 +218,31 @@ namespace RescuAR.App.ViewModels.Authentication
                     try
                     {
                         var json = JsonDocument.Parse(msg);
-                        if (json.RootElement.TryGetProperty("msg", out var msgProp))
+                        if (json.RootElement.TryGetProperty("msg", out var msgProp) || json.RootElement.TryGetProperty("message", out msgProp) || json.RootElement.TryGetProperty("error_description", out msgProp))
                         {
                             msg = msgProp.GetString();
                         }
                     }
                     catch { }
                 }
-                ErrorMessage = msg ?? "An error occurred during registration. Please try again.";
-                OnPropertyChanged(nameof(HasError));
+                
+                string finalError = msg ?? "An error occurred during registration. Please try again.";
+                await ShowErrorAsync(finalError);
             }
             finally
             {
                 IsLoading = false;
+            }
+        }
+
+        private async Task ShowErrorAsync(string message)
+        {
+            ErrorMessage = message;
+            OnPropertyChanged(nameof(HasError));
+            
+            if (Application.Current?.MainPage != null)
+            {
+                await Application.Current.MainPage.DisplayAlert("Registration Error", message, "OK");
             }
         }
 

@@ -73,7 +73,7 @@
                             </DataTrigger>
                         </Border.Triggers>
                         <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
-                            <Entry x:Name="passwordEntry" Grid.Column="0" Text="{Binding Password}" IsPassword="{Binding IsPasswordHidden}" Placeholder="********" PlaceholderColor="#BDBDBD" TextColor="#1E1E1E" FontSize="14" FontFamily="OpenSansRegular" VerticalOptions="Center" />
+                            <Entry x:Name="passwordEntry" Grid.Column="0" Text="{Binding Password}" IsPassword="False" Placeholder="********" PlaceholderColor="#BDBDBD" TextColor="#1E1E1E" FontSize="14" FontFamily="OpenSansRegular" VerticalOptions="Center" />
                             <ContentView Grid.Column="1" WidthRequest="24" HeightRequest="24" VerticalOptions="Center" HorizontalOptions="Center">
                                 <ContentView.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding TogglePasswordVisibilityCommand}" />

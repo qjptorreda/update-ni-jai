@@ -39,7 +39,7 @@
                     <!-- Notification Bell with Badge Count -->
                     <Grid Grid.Column="1" WidthRequest="32" HeightRequest="32" HorizontalOptions="End" VerticalOptions="Center">
                         <Grid.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding OpenNotificationsModalCommand}" />
+                            <TapGestureRecognizer Command="{Binding OpenNotificationsCommand}" />
                         </Grid.GestureRecognizers>
                         
                         <!-- Bell Icon -->
@@ -718,101 +718,7 @@
             </Border>
         </Grid>
 
-        <!-- ============================================================== -->
-        <!-- MODAL OVERLAY 3: NOTIFICATIONS MODAL -->
-        <!-- ============================================================== -->
-        <Grid BackgroundColor="#80000000"
-              IsVisible="{Binding IsNotificationsModalVisible}">
-            
-            <Border BackgroundColor="#FFFFFF"
-                    Margin="24"
-                    Padding="20"
-                    StrokeThickness="0"
-                    StrokeShape="RoundRectangle 20"
-                    VerticalOptions="Center"
-                    MaximumHeightRequest="500">
-                <Border.Shadow>
-                    <Shadow Brush="#000000" Offset="0,8" Radius="16" Opacity="0.3" />
-                </Border.Shadow>
-                
-                <Grid RowDefinitions="Auto, *, Auto" RowSpacing="14">
-                    <!-- Modal Header -->
-                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto">
-                        <VerticalStackLayout Grid.Column="0" Spacing="2">
-                            <Label Text="Notifications" TextColor="#0F172A" FontSize="18" FontAttributes="Bold" />
-                            <Label Text="Community updates and alerts" TextColor="#64748B" FontSize="12" />
-                        </VerticalStackLayout>
-                        
-                        <!-- Close Button -->
-                        <Button Grid.Column="1"
-                                Text="✕"
-                                TextColor="#64748B"
-                                BackgroundColor="Transparent"
-                                FontSize="18"
-                                Padding="0"
-                                WidthRequest="32"
-                                HeightRequest="32"
-                                Command="{Binding CloseNotificationsModalCommand}" />
-                    </Grid>
-                    
-                    <!-- Notification List -->
-                    <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Notifications}" Spacing="10">
-                            
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ReportNotification">
-                                    <Border StrokeThickness="1" Stroke="#E2E8F0" StrokeShape="RoundRectangle 12" BackgroundColor="#FFFFFF" Padding="12">
-                                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="12">
-                                            <!-- Notification Icon Indicator -->
-                                            <Border Grid.Column="0" WidthRequest="36" HeightRequest="36" StrokeShape="RoundRectangle 18" StrokeThickness="0" BackgroundColor="#E0F2FE" VerticalOptions="Start">
-                                                <Path Data="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
-                                                      Fill="#0284C7"
-                                                      WidthRequest="16"
-                                                      HeightRequest="16"
-                                                      Aspect="Uniform"
-                                                      HorizontalOptions="Center"
-                                                      VerticalOptions="Center" />
-                                            </Border>
-                                            
-                                            <!-- Notification Content -->
-                                            <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                                                <Grid ColumnDefinitions="*, Auto">
-                                                    <Label Grid.Column="0" Text="{Binding Title}" TextColor="#0F172A" FontSize="14" FontAttributes="Bold" />
-                                                    <Label Grid.Column="1" Text="{Binding TimestampText}" TextColor="#94A3B8" FontSize="11" />
-                                                </Grid>
-                                                <Label Text="{Binding Message}" TextColor="#475569" FontSize="12" LineBreakMode="WordWrap" />
-                                            </VerticalStackLayout>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
-                    </ScrollView>
-                    
-                    <!-- Footer Actions -->
-                    <Grid Grid.Row="2" ColumnDefinitions="*, *" ColumnSpacing="12">
-                        <Button Grid.Column="0"
-                                Text="Clear All"
-                                TextColor="#EF4444"
-                                BackgroundColor="#FEE2E2"
-                                CornerRadius="10"
-                                HeightRequest="40"
-                                FontSize="13"
-                                FontAttributes="Bold"
-                                Command="{Binding ClearNotificationsCommand}" />
-                        <Button Grid.Column="1"
-                                Text="Close"
-                                TextColor="#FFFFFF"
-                                BackgroundColor="#008080"
-                                CornerRadius="10"
-                                HeightRequest="40"
-                                FontSize="13"
-                                FontAttributes="Bold"
-                                Command="{Binding CloseNotificationsModalCommand}" />
-                    </Grid>
-                </Grid>
-            </Border>
-        </Grid>
+
 
     </Grid>
 </ContentPage>

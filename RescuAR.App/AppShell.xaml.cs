@@ -30,6 +30,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("SafetyCirclePage", typeof(Views.Map.SafetyCirclePage));
         Routing.RegisterRoute("SummaryPage", typeof(Views.Summary.SummaryPage));
         Routing.RegisterRoute("CameraPage", typeof(Views.Camera.CameraPage));
+        Routing.RegisterRoute("NotificationsPage", typeof(Views.Reports.NotificationsPage));
         Routing.RegisterRoute("Prepare/FloodHistory", typeof(Views.Prepare.FloodHistoryPage));
         Routing.RegisterRoute("FloodHistoryPage", typeof(Views.Prepare.FloodHistoryPage));
         Routing.RegisterRoute("Prepare/HistoricalPhotos", typeof(Views.Prepare.HistoricalPhotosPage));

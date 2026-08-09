@@ -28,9 +28,6 @@ namespace RescuAR.App.ViewModels.Reports
         private int unreadNotificationsCount;
 
         [ObservableProperty]
-        private bool isNotificationsModalVisible;
-
-        [ObservableProperty]
         private ObservableCollection<CommunityReport> reports = new();
 
         [ObservableProperty]
@@ -188,21 +185,18 @@ namespace RescuAR.App.ViewModels.Reports
             {
                 var list = await _reportService.GetReportsAsync(SearchQuery, SelectedFilter);
                 
-                if (!_isFirstLoad)
+                foreach (var report in list)
                 {
-                    foreach (var report in list)
+                    if (!_seenReportIds.Contains(report.Id))
                     {
-                        if (!_seenReportIds.Contains(report.Id))
+                        var notification = new ReportNotification
                         {
-                            var notification = new ReportNotification
-                            {
-                                Title = $"New {report.Category}",
-                                Message = $"{report.PostedBy} reported: {report.Title} in {report.Address}",
-                                Timestamp = DateTime.Now
-                            };
-                            Notifications.Insert(0, notification);
-                            UnreadNotificationsCount++;
-                        }
+                            Title = report.PostedBy,
+                            Message = $"reports all about {report.Title}",
+                            Timestamp = report.CreatedAt
+                        };
+                        Notifications.Insert(0, notification);
+                        UnreadNotificationsCount++;
                     }
                 }
                 
@@ -496,20 +490,18 @@ namespace RescuAR.App.ViewModels.Reports
         }
 
         [RelayCommand]
-        private void OpenNotificationsModal()
+        private async Task OpenNotificationsAsync()
         {
-            IsNotificationsModalVisible = true;
             foreach (var notif in Notifications)
             {
                 notif.IsRead = true;
             }
             UnreadNotificationsCount = 0;
-        }
-
-        [RelayCommand]
-        private void CloseNotificationsModal()
-        {
-            IsNotificationsModalVisible = false;
+            
+            if (Shell.Current != null)
+            {
+                await Shell.Current.GoToAsync("NotificationsPage");
+            }
         }
 
         [RelayCommand]
@@ -551,6 +543,6 @@ namespace RescuAR.App.ViewModels.Reports
         public string Message { get; set; } = string.Empty;
         public DateTime Timestamp { get; set; } = DateTime.Now;
         public bool IsRead { get; set; } = false;
-        public string TimestampText => Timestamp.ToString("hh:mm tt");
-    }
+        public string TimestampText => Timestamp.ToString("MMM dd, yyyy - hh:mm tt");
+  }
 }

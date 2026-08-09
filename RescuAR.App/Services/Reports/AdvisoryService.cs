@@ -105,6 +105,26 @@ public static class RealtimeAdvisoryManager
                                 // Admin pushed a new advisory! Trigger SweetAlert Pop-Up Modal!
                                 MainThread.BeginInvokeOnMainThread(() =>
                                 {
+#if ANDROID
+                                    try
+                                    {
+                                        var afd = Android.App.Application.Context.Assets?.OpenFd("ndrrmc_alarm.ogg");
+                                        if (afd != null)
+                                        {
+                                            var player = new Android.Media.MediaPlayer();
+                                            player.SetDataSource(afd.FileDescriptor, afd.StartOffset, afd.Length);
+                                            player.Prepare();
+                                            player.Start();
+                                            
+                                            // Release player after it finishes
+                                            player.Completion += (s, e) => { player.Release(); };
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        System.Diagnostics.Debug.WriteLine($"Audio error: {ex.Message}");
+                                    }
+#endif
                                     OnNewAdvisoryPushed?.Invoke(latest);
                                 });
                             }

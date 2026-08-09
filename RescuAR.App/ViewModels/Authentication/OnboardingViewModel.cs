@@ -34,10 +34,7 @@ namespace RescuAR.App.ViewModels.Authentication
         [ObservableProperty]
         private string _versionText = "v0.0.1a";
 
-        public bool IsBackButtonVisible => CurrentSlideIndex == 1 || CurrentSlideIndex == 2;
-        public bool IsSkipButtonVisible => CurrentSlideIndex < 3;
-        public bool IsOnboardingVisible => CurrentSlideIndex < 3;
-        public bool IsEntryVisible => CurrentSlideIndex == 3;
+        public bool IsOnboardingVisible => true;
 
         public bool IsDot1Active => CurrentSlideIndex == 0;
         public bool IsDot2Active => CurrentSlideIndex == 1;
@@ -89,10 +86,6 @@ namespace RescuAR.App.ViewModels.Authentication
             }
 
             // Notify UI of visibility changes
-            OnPropertyChanged(nameof(IsBackButtonVisible));
-            OnPropertyChanged(nameof(IsSkipButtonVisible));
-            OnPropertyChanged(nameof(IsOnboardingVisible));
-            OnPropertyChanged(nameof(IsEntryVisible));
             OnPropertyChanged(nameof(IsDot1Active));
             OnPropertyChanged(nameof(IsDot2Active));
             OnPropertyChanged(nameof(IsDot3Active));
@@ -108,60 +101,24 @@ namespace RescuAR.App.ViewModels.Authentication
             }
             else
             {
-                NavigateToSplash();
-            }
-        }
-
-        [RelayCommand]
-        private void Back()
-        {
-            if (CurrentSlideIndex > 0)
-            {
-                CurrentSlideIndex--;
-                UpdateSlideData();
+                NavigateToLogin();
             }
         }
 
         [RelayCommand]
         private void Skip()
         {
-            NavigateToSplash();
+            NavigateToLogin();
         }
 
-        private void NavigateToSplash()
-        {
-            var splashPage = _serviceProvider.GetRequiredService<SplashPage>();
-            MainThread.BeginInvokeOnMainThread(async () =>
-            {
-                if (Application.Current?.MainPage is NavigationPage navPage)
-                {
-                    await navPage.PushAsync(splashPage);
-                }
-            });
-        }
-
-        [RelayCommand]
-        private void CreateAccount()
-        {
-            var registrationPage = _serviceProvider.GetRequiredService<RegistrationPage>();
-            MainThread.BeginInvokeOnMainThread(async () =>
-            {
-                if (Application.Current?.MainPage is NavigationPage navPage)
-                {
-                    await navPage.PushAsync(registrationPage);
-                }
-            });
-        }
-
-        [RelayCommand]
-        private void SignIn()
+        private void NavigateToLogin()
         {
             var loginPage = _serviceProvider.GetRequiredService<LoginPage>();
-            MainThread.BeginInvokeOnMainThread(async () =>
+            MainThread.BeginInvokeOnMainThread(() =>
             {
-                if (Application.Current?.MainPage is NavigationPage navPage)
+                if (Application.Current != null)
                 {
-                    await navPage.PushAsync(loginPage);
+                    Application.Current.MainPage = new NavigationPage(loginPage);
                 }
             });
         }

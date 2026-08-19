@@ -280,6 +280,24 @@ public partial class DashboardViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task OpenReportsAsync()
+    {
+        if (Shell.Current != null)
+        {
+            await Shell.Current.GoToAsync("//Reports");
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenHotlinesAsync()
+    {
+        if (Shell.Current != null)
+        {
+            await Shell.Current.GoToAsync("Prepare/HotlineDirectory");
+        }
+    }
+
+    [RelayCommand]
     private async Task OpenEvacuationAsync()
     {
         if (Shell.Current != null)

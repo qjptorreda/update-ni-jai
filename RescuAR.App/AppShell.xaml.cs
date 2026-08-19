@@ -10,7 +10,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("Prepare/PASS", typeof(Views.Prepare.PASSPage));
         Routing.RegisterRoute("Prepare/Assessment", typeof(Views.Prepare.AssessmentPage));
         Routing.RegisterRoute("Prepare/EvacuationCenterInfo", typeof(Views.Prepare.EvacuationCenterInfoPage));
-        Routing.RegisterRoute("Prepare/HotlineDirectory", typeof(Views.Prepare.EvacuationCenterInfoPage));
+        Routing.RegisterRoute("Prepare/HotlineDirectory", typeof(Views.Prepare.HotlineDirectoryPage));
         Routing.RegisterRoute("AdvisoryFeedPage", typeof(Views.Reports.AdvisoryFeedPage));
         Routing.RegisterRoute("Reports/AdvisoryFeed", typeof(Views.Reports.AdvisoryFeedPage));
         Routing.RegisterRoute("ProfilePage", typeof(Views.Profile.ProfilePage));

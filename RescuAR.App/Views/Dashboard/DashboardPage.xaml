@@ -205,64 +205,89 @@
                 </Border>
 
 
-                <!-- 4. Quick Access Bento Grid (Kit Checklist, Evacuation Centers & Safety Circle) -->
-                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
-                   
-                    <!-- Tile 1: Kit Checklist -->
-                    <Border Grid.Column="0" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 18" Padding="12,18">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding OpenChecklistCommand}" />
-                        </Border.GestureRecognizers>
-                        <VerticalStackLayout Spacing="4" VerticalOptions="Center" HorizontalOptions="Center">
-                            <Path Data="M19,6H16V5a2,2 0 0,0 -2,-2H10A2,2 0 0,0 8,5V6H5A2,2 0 0,0 3,8V19a2,2 0 0,0 2,2H19a2,2 0 0,0 2,-2V8A2,2 0 0,0 19,6M10,5h4V6H10V5M16,14H13V17H11V14H8V12H11V9H13V12H16V14Z"
-                                  Fill="#64748B"
-                                  WidthRequest="24"
-                                  HeightRequest="24"
-                                  Aspect="Uniform"
-                                  HorizontalOptions="Center"
-                                  Margin="0,0,0,2" />
-                            <Label Text="Kit Checklist" TextColor="#0F172A" FontSize="14" FontAttributes="Bold" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation" />
-                            <Label Text="10 Supplies" TextColor="#64748B" FontSize="10" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation" />
+                <!-- 4. Quick Actions -->
+                <VerticalStackLayout Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                        <Label Text="Quick Actions" TextColor="#0F172A" FontSize="16" FontAttributes="Bold" VerticalOptions="Center" Margin="4,0,0,0" />
+                        <Border Grid.Column="1" BackgroundColor="#F1F5F9" StrokeThickness="0" StrokeShape="RoundRectangle 8" Padding="12,6">
+                            <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                <Path Data="M14.06,9.02l.92.92L5.92,19H5v-.92l9.06-9.06M17.66,3c-.25,0-.51.1-.7.29l-1.83,1.83,3.75,3.75,1.83-1.83c.39-.39.39-1.02,0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6,3.19L3,17.25V21h3.75L17.81,9.94l-3.75-3.75z"
+                                      Fill="#334155" WidthRequest="16" HeightRequest="16" Aspect="Uniform" VerticalOptions="Center" />
+                                <Label Text="Edit" TextColor="#334155" FontSize="13" FontAttributes="Bold" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Border>
+                    </Grid>
+
+                    <Border BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="0">
+                        <VerticalStackLayout Spacing="0">
+                            <!-- Report Incident -->
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="16" BackgroundColor="Transparent">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding OpenReportsCommand}" />
+                                </Grid.GestureRecognizers>
+                                <Border Grid.Column="0" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 8" WidthRequest="40" HeightRequest="40" VerticalOptions="Center" HorizontalOptions="Center">
+                                    <Path Data="M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2" Fill="#0A8491" WidthRequest="20" HeightRequest="20" Aspect="Uniform" VerticalOptions="Center" HorizontalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                                    <Label Text="Report Incident" TextColor="#0F172A" FontSize="14" FontAttributes="Bold" />
+                                    <Label Text="Report / Create a Report" TextColor="#94A3B8" FontSize="12" />
+                                </VerticalStackLayout>
+                                <Path Grid.Column="2" Data="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" Fill="#0F172A" WidthRequest="20" HeightRequest="20" Aspect="Uniform" VerticalOptions="Center" />
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="#F1F5F9" />
+
+                            <!-- Emergency Hotlines -->
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="16" BackgroundColor="Transparent">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding OpenHotlinesCommand}" />
+                                </Grid.GestureRecognizers>
+                                <Border Grid.Column="0" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 8" WidthRequest="40" HeightRequest="40" VerticalOptions="Center" HorizontalOptions="Center">
+                                    <Path Data="M20,10.5C20,15.65 15.65,20 10.5,20C5.35,20 1,15.65 1,10.5C1,5.35 5.35,1 10.5,1C14.73,1 18.3,3.83 19.5,7.74M10.5,3C6.36,3 3,6.36 3,10.5C3,14.64 6.36,18 10.5,18C14.64,18 18,14.64 18,10.5C18,6.36 14.64,3 10.5,3M9,13H7V11H9V13M14,13H12V11H14V13M10.5,6C11.33,6 12,6.67 12,7.5V9.5C12,10.33 11.33,11 10.5,11C9.67,11 9,10.33 9,9.5V7.5C9,6.67 9.67,6 10.5,6Z" Fill="#0A8491" WidthRequest="20" HeightRequest="20" Aspect="Uniform" VerticalOptions="Center" HorizontalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                                    <Label Text="Emergency Hotlines" TextColor="#0F172A" FontSize="14" FontAttributes="Bold" />
+                                    <Label Text="Prepare / Emergency Hotlines" TextColor="#94A3B8" FontSize="12" />
+                                </VerticalStackLayout>
+                                <Path Grid.Column="2" Data="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" Fill="#0F172A" WidthRequest="20" HeightRequest="20" Aspect="Uniform" VerticalOptions="Center" />
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="#F1F5F9" />
+
+                            <!-- Evacuation Centers -->
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="16" BackgroundColor="Transparent">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding OpenEvacuationCommand}" />
+                                </Grid.GestureRecognizers>
+                                <Border Grid.Column="0" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 8" WidthRequest="40" HeightRequest="40" VerticalOptions="Center" HorizontalOptions="Center">
+                                    <Path Data="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z" Fill="#0A8491" WidthRequest="20" HeightRequest="20" Aspect="Uniform" VerticalOptions="Center" HorizontalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                                    <Label Text="Find Nearest Evacuation Center" TextColor="#0F172A" FontSize="14" FontAttributes="Bold" />
+                                    <Label Text="Prepare / Evacuation Centers" TextColor="#94A3B8" FontSize="12" />
+                                </VerticalStackLayout>
+                                <Path Grid.Column="2" Data="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" Fill="#0F172A" WidthRequest="20" HeightRequest="20" Aspect="Uniform" VerticalOptions="Center" />
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="#F1F5F9" />
+
+                            <!-- Safety Circle -->
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Padding="16" BackgroundColor="Transparent">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding OpenSafetyCircleCommand}" />
+                                </Grid.GestureRecognizers>
+                                <Border Grid.Column="0" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 8" WidthRequest="40" HeightRequest="40" VerticalOptions="Center" HorizontalOptions="Center">
+                                    <Path Data="M15,5L9,2.89L3,5V21L9,18.89L15,21L21,18V5L15,5M15,19L9,16.89V4.11L15,6.22V19Z" Fill="#0A8491" WidthRequest="20" HeightRequest="20" Aspect="Uniform" VerticalOptions="Center" HorizontalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                                    <Label Text="Safety Circle" TextColor="#0F172A" FontSize="14" FontAttributes="Bold" />
+                                    <Label Text="Map / Safety Circle" TextColor="#94A3B8" FontSize="12" />
+                                </VerticalStackLayout>
+                                <Path Grid.Column="2" Data="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" Fill="#0F172A" WidthRequest="20" HeightRequest="20" Aspect="Uniform" VerticalOptions="Center" />
+                            </Grid>
                         </VerticalStackLayout>
                     </Border>
-
-                    <!-- Tile 2: Evacuation Centers -->
-                    <Border Grid.Column="1" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 18" Padding="12,18">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding OpenEvacuationCommand}" />
-                        </Border.GestureRecognizers>
-                        <VerticalStackLayout Spacing="4" VerticalOptions="Center" HorizontalOptions="Center">
-                            <Path Data="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"
-                                  Fill="#64748B"
-                                  WidthRequest="24"
-                                  HeightRequest="24"
-                                  Aspect="Uniform"
-                                  HorizontalOptions="Center"
-                                  Margin="0,0,0,2" />
-                            <Label Text="Evacuation" TextColor="#0F172A" FontSize="14" FontAttributes="Bold" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation" />
-                            <Label Text="Real-Time" TextColor="#64748B" FontSize="10" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Tile 3: Safety Circle -->
-                    <Border Grid.Column="2" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 18" Padding="12,18">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding OpenSafetyCircleCommand}" />
-                        </Border.GestureRecognizers>
-                        <VerticalStackLayout Spacing="4" VerticalOptions="Center" HorizontalOptions="Center">
-                            <Path Data="M15,5L9,2.89L3,5V21L9,18.89L15,21L21,18V5L15,5M15,19L9,16.89V4.11L15,6.22V19Z"
-                                  Fill="#64748B"
-                                  WidthRequest="24"
-                                  HeightRequest="24"
-                                  Aspect="Uniform"
-                                  HorizontalOptions="Center"
-                                  Margin="0,0,0,2" />
-                            <Label Text="Safety Circle" TextColor="#0F172A" FontSize="14" FontAttributes="Bold" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation" />
-                            <Label Text="Family Status" TextColor="#64748B" FontSize="10" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation" />
-                        </VerticalStackLayout>
-                    </Border>
-
-                </Grid>
+                </VerticalStackLayout>
 
 
                 <!-- 5. Area Status Overview Card (Dynamic Red/Yellow/Green live color matching Supabase) -->

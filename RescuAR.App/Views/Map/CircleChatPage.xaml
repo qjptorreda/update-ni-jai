@@ -1,41 +1,170 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:RescuAR.App.ViewModels.Map"
              x:Class="RescuAR.App.Views.Map.CircleChatPage"
+             x:DataType="vm:CircleChatViewModel"
              Title="Safety Circle Chat"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="#F2F2F7">
-    <Grid RowDefinitions="Auto, *, Auto">
-        <!-- Header -->
-        <Border Grid.Row="0" BackgroundColor="#0F8068" HeightRequest="65" StrokeThickness="0" Padding="16,0">
-            <Grid ColumnDefinitions="Auto, *" VerticalOptions="Center">
-                <ContentView Grid.Column="0" WidthRequest="40" HeightRequest="40">
-                    <ContentView.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnBackClicked" />
-                    </ContentView.GestureRecognizers>
-                    <Path Data="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" Fill="White" Aspect="Uniform" WidthRequest="24" HeightRequest="24" HorizontalOptions="Center" VerticalOptions="Center"/>
-                </ContentView>
-                <Label Grid.Column="1" Text="Safety Circle Chat" TextColor="White" FontSize="18" FontAttributes="Bold" Margin="10,0,0,0" VerticalOptions="Center" />
+             BackgroundColor="#F8FAFC">
+
+    <Grid RowDefinitions="Auto, Auto, *, Auto">
+        <!-- Top Header -->
+        <Border Grid.Row="0" BackgroundColor="#0F8068" HeightRequest="70" StrokeThickness="0" Padding="16,0">
+            <Grid ColumnDefinitions="Auto, *, Auto" VerticalOptions="Center">
+                <Border Grid.Column="0" BackgroundColor="Transparent" StrokeThickness="0" WidthRequest="40" HeightRequest="40">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding BackCommand}" />
+                    </Border.GestureRecognizers>
+                    <Path Data="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" Fill="White" Aspect="Uniform" WidthRequest="22" HeightRequest="22" HorizontalOptions="Center" VerticalOptions="Center"/>
+                </Border>
+
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Margin="12,0" Spacing="2">
+                    <Label Text="{Binding CircleName}" TextColor="White" FontSize="17" FontAttributes="Bold" LineBreakMode="TailTruncation"/>
+                    <Label Text="Family Status &amp; Photo Updates" TextColor="#B2DFDB" FontSize="11"/>
+                </VerticalStackLayout>
             </Grid>
         </Border>
 
-        <!-- Messages List -->
-        <CollectionView Grid.Row="1" x:Name="MessagesList" Margin="10" />
+        <!-- Uploading Indicator Banner -->
+        <Border Grid.Row="1" IsVisible="{Binding IsUploading}" BackgroundColor="#E0F2FE" Stroke="#BAE6FD" StrokeThickness="1" Padding="12,8" Margin="12,8,12,0">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+            </Border.StrokeShape>
+            <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                <ActivityIndicator IsRunning="True" Color="#0284C7" WidthRequest="18" HeightRequest="18"/>
+                <Label Text="{Binding UploadStatusText}" TextColor="#0369A1" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+        </Border>
 
-        <!-- Input Area -->
-        <Grid Grid.Row="2" ColumnDefinitions="*, Auto" BackgroundColor="White">
-            <Border Grid.Column="0" Margin="10" StrokeShape="RoundRectangle 20" StrokeThickness="1" Stroke="#E0E0E0" BackgroundColor="#F5F5F5" Padding="15,0">
-                <Entry x:Name="MessageEntry" Placeholder="Type a message..." VerticalOptions="Center" />
-            </Border>
-            <Border Grid.Column="1" BackgroundColor="#0F8068" WidthRequest="44" HeightRequest="44" Margin="0,0,10,0" StrokeThickness="0">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="22" />
-                </Border.StrokeShape>
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Tapped="OnSendClicked" />
-                </Border.GestureRecognizers>
-                <Path Data="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" Fill="White" Aspect="Uniform" WidthRequest="20" HeightRequest="20" HorizontalOptions="Center" VerticalOptions="Center" />
-            </Border>
-        </Grid>
+        <!-- Messages Stream -->
+        <CollectionView Grid.Row="2" 
+                        ItemsSource="{Binding Messages}" 
+                        Margin="12,8"
+                        SelectionMode="None">
+            <CollectionView.EmptyView>
+                <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="8" Margin="0,80,0,0">
+                    <Label Text="💬" FontSize="44" HorizontalOptions="Center"/>
+                    <Label Text="No messages yet" TextColor="#64748B" FontSize="16" FontAttributes="Bold" HorizontalOptions="Center"/>
+                    <Label Text="Send a message or photo update to your circle members!" TextColor="#94A3B8" FontSize="12" HorizontalOptions="Center" HorizontalTextAlignment="Center" MaximumWidthRequest="280"/>
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:ChatMessageItem">
+                    <Grid Padding="0,6">
+                        <!-- My Message (Right Aligned) -->
+                        <VerticalStackLayout IsVisible="{Binding IsMyMessage}" HorizontalOptions="End" MaximumWidthRequest="290">
+                            <Border BackgroundColor="#0F8068" StrokeThickness="0" Padding="12,10">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="16,16,2,16" />
+                                </Border.StrokeShape>
+                                <VerticalStackLayout Spacing="6">
+                                    <!-- Attached Media -->
+                                    <Border IsVisible="{Binding HasMedia}" StrokeShape="RoundRectangle 10" StrokeThickness="0" Margin="0,0,0,4">
+                                        <Image Source="{Binding MediaUrl}" Aspect="AspectFill" HeightRequest="190" WidthRequest="250"/>
+                                    </Border>
+                                    
+                                    <!-- Text Message -->
+                                    <Label IsVisible="{Binding HasText}" Text="{Binding MessageText}" TextColor="White" FontSize="14" LineBreakMode="WordWrap"/>
+                                    
+                                    <!-- Time -->
+                                    <Label Text="{Binding FormattedTime}" TextColor="#B2DFDB" FontSize="10" HorizontalOptions="End"/>
+                                </VerticalStackLayout>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Other Family Member's Message (Left Aligned) -->
+                        <HorizontalStackLayout IsVisible="{Binding IsNotMyMessage}" Spacing="8" HorizontalOptions="Start" MaximumWidthRequest="310">
+                            <!-- Sender Initial / Avatar -->
+                            <Border BackgroundColor="#E2E8F0" StrokeThickness="0" WidthRequest="32" HeightRequest="32" VerticalOptions="Start" Margin="0,2,0,0">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="16" />
+                                </Border.StrokeShape>
+                                <Grid>
+                                    <Path Data="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" 
+                                          Fill="#64748B" Aspect="Uniform" WidthRequest="16" HeightRequest="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                                    <Image Source="{Binding SenderAvatarUrl}" Aspect="AspectFill" />
+                                </Grid>
+                            </Border>
+
+                            <VerticalStackLayout>
+                                <Label Text="{Binding SenderName}" TextColor="#475569" FontSize="11" FontAttributes="Bold" Margin="4,0,0,3"/>
+                                <Border BackgroundColor="White" StrokeThickness="0" Padding="12,10" Shadow="{Shadow Brush=Black, Offset='0,1', Radius=3, Opacity=0.08}">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="2,16,16,16" />
+                                    </Border.StrokeShape>
+                                    <VerticalStackLayout Spacing="6">
+                                        <!-- Attached Media -->
+                                        <Border IsVisible="{Binding HasMedia}" StrokeShape="RoundRectangle 10" StrokeThickness="0" Margin="0,0,0,4">
+                                            <Image Source="{Binding MediaUrl}" Aspect="AspectFill" HeightRequest="190" WidthRequest="250"/>
+                                        </Border>
+                                        
+                                        <!-- Text Message -->
+                                        <Label IsVisible="{Binding HasText}" Text="{Binding MessageText}" TextColor="#1E293B" FontSize="14" LineBreakMode="WordWrap"/>
+                                        
+                                        <!-- Time -->
+                                        <Label Text="{Binding FormattedTime}" TextColor="#94A3B8" FontSize="10" HorizontalOptions="End"/>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Bottom Chat Input Bar -->
+        <Border Grid.Row="3" BackgroundColor="White" StrokeThickness="1" Stroke="#E2E8F0" Padding="10,8">
+            <Grid ColumnDefinitions="Auto, Auto, *, Auto" ColumnSpacing="6" VerticalOptions="Center">
+                <!-- Camera Button (Quick Photo Proof) -->
+                <Border Grid.Column="0" BackgroundColor="#F1F5F9" StrokeThickness="0" WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="20" />
+                    </Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding CapturePhotoCommand}" />
+                    </Border.GestureRecognizers>
+                    <Path Data="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z" 
+                          Fill="#0F8068" Aspect="Uniform" WidthRequest="20" HeightRequest="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+
+                <!-- Gallery Button (Photo / Video) -->
+                <Border Grid.Column="1" BackgroundColor="#F1F5F9" StrokeThickness="0" WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="20" />
+                    </Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding PickMediaCommand}" />
+                    </Border.GestureRecognizers>
+                    <Path Data="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" 
+                          Fill="#0F8068" Aspect="Uniform" WidthRequest="20" HeightRequest="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+
+                <!-- Message Input Entry -->
+                <Border Grid.Column="2" BackgroundColor="#F8FAFC" Stroke="#E2E8F0" StrokeThickness="1" Padding="14,0" HeightRequest="42" VerticalOptions="Center">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="21" />
+                    </Border.StrokeShape>
+                    <Entry Text="{Binding NewMessageText}" 
+                           Placeholder="Type update or message..." 
+                           PlaceholderColor="#94A3B8" 
+                           TextColor="#0F172A" 
+                           FontSize="13" 
+                           VerticalOptions="Center"
+                           ReturnCommand="{Binding SendMessageCommand}" />
+                </Border>
+
+                <!-- Send Button -->
+                <Border Grid.Column="3" BackgroundColor="#0F8068" StrokeThickness="0" WidthRequest="42" HeightRequest="42" VerticalOptions="Center">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="21" />
+                    </Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SendMessageCommand}" />
+                    </Border.GestureRecognizers>
+                    <Path Data="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" Fill="White" Aspect="Uniform" WidthRequest="18" HeightRequest="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+            </Grid>
+        </Border>
     </Grid>
 </ContentPage>

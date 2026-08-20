@@ -1,25 +1,31 @@
 using Microsoft.Maui.Controls;
+using RescuAR.App.ViewModels.Map;
 
 namespace RescuAR.App.Views.Map;
 
 public partial class CircleChatPage : ContentPage
 {
-    public CircleChatPage()
+    public CircleChatPage(CircleChatViewModel viewModel)
     {
         InitializeComponent();
+        BindingContext = viewModel;
     }
 
-    private async void OnBackClicked(object sender, System.EventArgs e)
+    protected override async void OnAppearing()
     {
-        await Shell.Current.GoToAsync("..");
-    }
-
-    private void OnSendClicked(object sender, System.EventArgs e)
-    {
-        // TODO: Send message logic
-        if (!string.IsNullOrWhiteSpace(MessageEntry.Text))
+        base.OnAppearing();
+        if (BindingContext is CircleChatViewModel vm)
         {
-            MessageEntry.Text = string.Empty;
+            await vm.LoadMessagesAsync();
+        }
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        if (BindingContext is CircleChatViewModel vm)
+        {
+            vm.StopTimer();
         }
     }
 }

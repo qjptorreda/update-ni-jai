@@ -97,6 +97,8 @@ public static class MauiProgram
             builder.Services.AddTransient<SafetyCircleOverviewPage>();
             builder.Services.AddTransient<SafetyCircleViewModel>();
             builder.Services.AddTransient<SafetyCirclePage>();
+            builder.Services.AddTransient<CircleChatViewModel>();
+            builder.Services.AddTransient<CircleChatPage>();
             builder.Services.AddTransient<RescuAR.App.Views.Profile.SafetyCircleSettingsPage>();
             builder.Services.AddTransient<WeatherInformationViewModel>();
             builder.Services.AddTransient<WeatherInformationPage>();

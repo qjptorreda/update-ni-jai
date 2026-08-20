@@ -70,4 +70,35 @@ namespace RescuAR.App.Models
         [Column("initials")]
         public string Initials { get; set; } = string.Empty;
     }
+
+    [Table("safety_circle_messages")]
+    public class SupabaseCircleMessage : BaseModel
+    {
+        [PrimaryKey("id", false)]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        [Column("circle_id")]
+        public string CircleId { get; set; } = string.Empty;
+
+        [Column("user_id")]
+        public string UserId { get; set; } = string.Empty;
+
+        [Column("sender_name")]
+        public string SenderName { get; set; } = string.Empty;
+
+        [Column("sender_avatar_url")]
+        public string SenderAvatarUrl { get; set; } = string.Empty;
+
+        [Column("message_text")]
+        public string MessageText { get; set; } = string.Empty;
+
+        [Column("media_url")]
+        public string MediaUrl { get; set; } = string.Empty;
+
+        [Column("media_type")]
+        public string MediaType { get; set; } = "Text"; // Text, Image, Video
+
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
 }

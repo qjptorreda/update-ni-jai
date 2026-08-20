@@ -143,6 +143,30 @@
             </VerticalStackLayout>
         </Border>
 
+        <!-- Floating Chat Button for Safety Circle Group Chat -->
+        <Border BackgroundColor="#0F8068"
+                StrokeThickness="0"
+                WidthRequest="60"
+                HeightRequest="60"
+                Margin="16, 16, 16, 110"
+                HorizontalOptions="End"
+                VerticalOptions="End"
+                Shadow="{Shadow Brush=Black, Offset='0,6', Radius=10, Opacity=0.3}">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="20" />
+            </Border.StrokeShape>
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding OpenChatCommand}" />
+            </Border.GestureRecognizers>
+            <Path Data="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" 
+                  Fill="White" 
+                  Aspect="Uniform" 
+                  WidthRequest="26" 
+                  HeightRequest="26" 
+                  HorizontalOptions="Center" 
+                  VerticalOptions="Center" />
+        </Border>
+
         <!-- People Button -->
         <Border BackgroundColor="#2D9A90"
                 StrokeThickness="0"

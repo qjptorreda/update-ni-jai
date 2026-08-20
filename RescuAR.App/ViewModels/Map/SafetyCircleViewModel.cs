@@ -378,4 +378,20 @@ public partial class SafetyCircleViewModel : ObservableObject
             SelectCircle(circle);
         }
     }
+
+    [RelayCommand]
+    private async Task OpenChatAsync()
+    {
+        if (string.IsNullOrEmpty(_currentCircleId))
+        {
+            if (Shell.Current != null)
+                await Shell.Current.DisplayAlert("Select Circle", "Please create or select a Safety Circle first to chat with family members.", "OK");
+            return;
+        }
+
+        if (Shell.Current != null)
+        {
+            await Shell.Current.GoToAsync($"CircleChatPage?circleId={_currentCircleId}&circleName={Uri.EscapeDataString(SelectedCircleName)}");
+        }
+    }
 }

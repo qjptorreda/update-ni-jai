@@ -191,6 +191,74 @@ namespace RescuAR.App.Services.Cloud
             return locationsResponse.Models;
         }
 
+        // --- Chat Messaging ---
+
+        public async Task<SupabaseCircleMessage?> SendMessageAsync(string circleId, string messageText, string? mediaUrl = null, string? mediaType = "Text")
+        {
+            try
+            {
+                var client = GetClient();
+                var userId = GetCurrentUserId();
+
+                // Fetch sender name and avatar
+                string senderName = "Family Member";
+                string avatarUrl = string.Empty;
+
+                try
+                {
+                    var userResp = await client.From<User>().Where(u => u.Id == userId).Get();
+                    var user = userResp.Models.FirstOrDefault();
+                    if (user != null)
+                    {
+                        senderName = $"{user.FirstName} {user.LastName}".Trim();
+                        if (string.IsNullOrWhiteSpace(senderName)) senderName = user.Username;
+                        avatarUrl = user.AvatarUrl;
+                    }
+                }
+                catch { }
+
+                var msg = new SupabaseCircleMessage
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    CircleId = circleId,
+                    UserId = userId,
+                    SenderName = senderName,
+                    SenderAvatarUrl = avatarUrl,
+                    MessageText = messageText ?? string.Empty,
+                    MediaUrl = mediaUrl ?? string.Empty,
+                    MediaType = string.IsNullOrWhiteSpace(mediaUrl) ? "Text" : (mediaType ?? "Image"),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var insertResp = await client.From<SupabaseCircleMessage>().Insert(msg);
+                return insertResp.Models.FirstOrDefault() ?? msg;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to send message: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<List<SupabaseCircleMessage>> GetCircleMessagesAsync(string circleId)
+        {
+            try
+            {
+                var client = GetClient();
+                var resp = await client.From<SupabaseCircleMessage>()
+                    .Where(m => m.CircleId == circleId)
+                    .Order("created_at", Supabase.Postgrest.Constants.Ordering.Ascending)
+                    .Get();
+
+                return resp.Models ?? new List<SupabaseCircleMessage>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to get circle messages: {ex.Message}");
+                return new List<SupabaseCircleMessage>();
+            }
+        }
+
         private string GenerateInviteCode()
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

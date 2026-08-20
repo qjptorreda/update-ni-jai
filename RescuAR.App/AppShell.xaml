@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Shell
+    x:Class="RescuAR.App.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:RescuAR.App.Views"
+    xmlns:dashboard="clr-namespace:RescuAR.App.Views.Dashboard"
+    xmlns:map="clr-namespace:RescuAR.App.Views.Map"
+    xmlns:camera="clr-namespace:RescuAR.App.Views.Camera"
+    xmlns:reports="clr-namespace:RescuAR.App.Views.Reports"
+    xmlns:prepare="clr-namespace:RescuAR.App.Views.Prepare"
+    xmlns:profile="clr-namespace:RescuAR.App.Views.Profile"
+    Shell.TabBarBackgroundColor="White"
+    Shell.TabBarTitleColor="#0A8491"
+    Shell.TabBarUnselectedColor="#7F7F7F">
+
+    <TabBar>
+        <ShellContent
+            Title="Home"
+            Icon="tab_home.png"
+            Route="Home"
+            ContentTemplate="{DataTemplate dashboard:DashboardPage}" />
+
+        <ShellContent
+            Title="Circle"
+            Icon="tab_map.png"
+            Route="SafetyCirclePage"
+            ContentTemplate="{DataTemplate map:SafetyCirclePage}" />
+
+        <ShellContent
+            Title="Camera"
+            Icon="tab_camera.png"
+            Route="Camera"
+            ContentTemplate="{DataTemplate camera:CameraPage}" />
+
+        <ShellContent
+            Title="Reports"
+            Icon="tab_reports.png"
+            Route="Reports"
+            ContentTemplate="{DataTemplate reports:ReportsPage}" />
+
+        <ShellContent
+            Title="Profile"
+            Icon="tab_profile.png"
+            Route="Profile"
+            ContentTemplate="{DataTemplate profile:ProfilePage}" />
+    </TabBar>
+
+</Shell>

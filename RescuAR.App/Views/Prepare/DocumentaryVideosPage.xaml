@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:RescuAR.App.ViewModels.Prepare"
+    x:Class="RescuAR.App.Views.Prepare.DocumentaryVideosPage"
+    x:DataType="vm:DocumentaryVideosViewModel"
+    Title="Documentary Videos"
+    BackgroundColor="#F8FAFC"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Top Custom Header Bar -->
+        <Border Grid.Row="0" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="0,0,0,1" Padding="16,12">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Border Grid.Column="0" BackgroundColor="#F1F5F9" StrokeThickness="0" StrokeShape="RoundRectangle 16" WidthRequest="36" HeightRequest="36">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding BackCommand}" />
+                    </Border.GestureRecognizers>
+                    <Label Text="←" TextColor="#0F172A" FontSize="18" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+                <Label Grid.Column="1" Text="Flood Documentaries" TextColor="#0F172A" FontSize="17" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="24" Padding="16">
+                
+                <Label Text="🎥 Official Footage" TextColor="#0F172A" FontSize="22" FontAttributes="Bold" />
+                
+                <!-- Video 1: Typhoon Ondoy -->
+                <Border BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                    <VerticalStackLayout Spacing="12">
+                        <Border BackgroundColor="#DC2626" StrokeThickness="0" StrokeShape="RoundRectangle 6" Padding="8,3" HorizontalOptions="Start">
+                            <Label Text="Typhoon Ondoy (2009)" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold" />
+                        </Border>
+                        <Border StrokeThickness="1" Stroke="#E2E8F0" StrokeShape="RoundRectangle 16" HeightRequest="210">
+                            <!-- Swapped WebView for a reliable embedded player for mobile -->
+                            <WebView Source="{Binding OndoyVideoUrl}" HorizontalOptions="Fill" VerticalOptions="Fill" />
+                        </Border>
+                        <Label Text="Historical coverage of record-breaking rainfall and flood levels in Marikina." TextColor="#475569" FontSize="13" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Video 2: Typhoon Ulysses -->
+                <Border BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="16">
+                    <VerticalStackLayout Spacing="12">
+                        <Border BackgroundColor="#D97706" StrokeThickness="0" StrokeShape="RoundRectangle 6" Padding="8,3" HorizontalOptions="Start">
+                            <Label Text="Typhoon Ulysses (2020)" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold" />
+                        </Border>
+                        <Border StrokeThickness="1" Stroke="#E2E8F0" StrokeShape="RoundRectangle 16" HeightRequest="210">
+                            <WebView Source="{Binding UlyssesVideoUrl}" HorizontalOptions="Fill" VerticalOptions="Fill" />
+                        </Border>
+                        <Label Text="Marikina River 22-meter flood rescue footage and disaster recovery." TextColor="#475569" FontSize="13" />
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="jl35">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/RescuAR.App/obj/Release/net10.0-android/lp/120/jl/res.zip!/" />
+      <root url="jar://$PROJECT_DIR$/RescuAR.App/obj/Release/net10.0-android/lp/120/jl/classes.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

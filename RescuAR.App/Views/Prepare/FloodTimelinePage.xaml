@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:RescuAR.App.ViewModels.Prepare"
+    x:Class="RescuAR.App.Views.Prepare.FloodTimelinePage"
+    x:DataType="vm:FloodTimelineViewModel"
+    Title="Flood Timeline"
+    BackgroundColor="#F8FAFC"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Top Custom Header Bar -->
+        <Border Grid.Row="0" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="0,0,0,1" Padding="16,12">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Border Grid.Column="0" BackgroundColor="#F1F5F9" StrokeThickness="0" StrokeShape="RoundRectangle 16" WidthRequest="36" HeightRequest="36">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding BackCommand}" />
+                    </Border.GestureRecognizers>
+                    <Label Text="←" TextColor="#0F172A" FontSize="18" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+                <Label Grid.Column="1" Text="Historical Timeline" TextColor="#0F172A" FontSize="17" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="24" Padding="20">
+                <Label Text="🗓️ Major Flood Events" TextColor="#0F172A" FontSize="22" FontAttributes="Bold" />
+                
+                <!-- Timeline Event 1992 -->
+                <Grid ColumnDefinitions="Auto,*">
+                    <!-- Vertical Line and Dot -->
+                    <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center" Margin="0,0,16,0">
+                        <Ellipse Fill="#0284C7" WidthRequest="16" HeightRequest="16" />
+                        <BoxView Color="#0284C7" WidthRequest="2" VerticalOptions="FillAndExpand" Margin="0,4" />
+                    </VerticalStackLayout>
+                    
+                    <VerticalStackLayout Grid.Column="1" Spacing="8" Margin="0,0,0,32">
+                        <Label Text="1992" TextColor="#0284C7" FontSize="18" FontAttributes="Bold" />
+                        <Border BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="16">
+                            <Label Text="1992 Flood Event prompted modern flood modeling &amp; river wall construction in Marikina." TextColor="#334155" FontSize="14" LineBreakMode="WordWrap" />
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
+
+                <!-- Timeline Event 2009 -->
+                <Grid ColumnDefinitions="Auto,*">
+                    <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center" Margin="0,0,16,0">
+                        <Ellipse Fill="#DC2626" WidthRequest="16" HeightRequest="16" />
+                        <BoxView Color="#DC2626" WidthRequest="2" VerticalOptions="FillAndExpand" Margin="0,4" />
+                    </VerticalStackLayout>
+                    
+                    <VerticalStackLayout Grid.Column="1" Spacing="8" Margin="0,0,0,32">
+                        <Label Text="September 26, 2009" TextColor="#DC2626" FontSize="18" FontAttributes="Bold" />
+                        <Border BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="16">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="Typhoon Ondoy (Ketsana)" FontAttributes="Bold" FontSize="16" />
+                                <Label Text="Peak: 23.0m water level, 455mm rainfall in 24h" TextColor="#475569" FontSize="14" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
+
+                <!-- Timeline Event 2020 -->
+                <Grid ColumnDefinitions="Auto,*">
+                    <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center" Margin="0,0,16,0">
+                        <Ellipse Fill="#D97706" WidthRequest="16" HeightRequest="16" />
+                        <BoxView Color="#D97706" WidthRequest="2" VerticalOptions="FillAndExpand" Margin="0,4" />
+                    </VerticalStackLayout>
+                    
+                    <VerticalStackLayout Grid.Column="1" Spacing="8" Margin="0,0,0,32">
+                        <Label Text="November 11-12, 2020" TextColor="#D97706" FontSize="18" FontAttributes="Bold" />
+                        <Border BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="16">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="Typhoon Ulysses (Vamco)" FontAttributes="Bold" FontSize="16" />
+                                <Label Text="Peak: 22.0m water level, 3rd Alarm Evacuation" TextColor="#475569" FontSize="14" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
+                
+                <!-- Timeline Event 2024 -->
+                <Grid ColumnDefinitions="Auto,*">
+                    <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center" Margin="0,0,16,0">
+                        <Ellipse Fill="#2563EB" WidthRequest="16" HeightRequest="16" />
+                    </VerticalStackLayout>
+                    
+                    <VerticalStackLayout Grid.Column="1" Spacing="8" Margin="0,0,0,32">
+                        <Label Text="July 24, 2024" TextColor="#2563EB" FontSize="18" FontAttributes="Bold" />
+                        <Border BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="16">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="Typhoon Carina (Gaemi)" FontAttributes="Bold" FontSize="16" />
+                                <Label Text="Peak: 20.7m water level, city-wide response" TextColor="#475569" FontSize="14" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

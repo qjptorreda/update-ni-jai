@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:RescuAR.App.ViewModels.Prepare"
+    x:Class="RescuAR.App.Views.Prepare.HistoricalPhotosPage"
+    x:DataType="vm:HistoricalPhotosViewModel"
+    Title="Historical Photos"
+    BackgroundColor="#F8FAFC"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Top Custom Header Bar -->
+        <Border Grid.Row="0" BackgroundColor="#FFFFFF" Stroke="#E2E8F0" StrokeThickness="0,0,0,1" Padding="16,12">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Border Grid.Column="0" BackgroundColor="#F1F5F9" StrokeThickness="0" StrokeShape="RoundRectangle 16" WidthRequest="36" HeightRequest="36">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding BackCommand}" />
+                    </Border.GestureRecognizers>
+                    <Label Text="←" TextColor="#0F172A" FontSize="18" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+                <Label Grid.Column="1" Text="Historical Photos" TextColor="#0F172A" FontSize="17" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="20" Padding="16">
+                <Label Text="Photo Archives" TextColor="#0F172A" FontSize="22" FontAttributes="Bold" />
+                <Label Text="Official DOST &amp; PAGASA records of Marikina River gauges." TextColor="#64748B" FontSize="14" />
+                
+                <Border StrokeThickness="0" StrokeShape="RoundRectangle 16" BackgroundColor="#FFFFFF" Padding="16" Margin="0,10,0,0">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="1992 Early Warning System" FontAttributes="Bold" FontSize="16" />
+                        <Image Source="carousel_flood_history.png" Aspect="AspectFill" HeightRequest="200" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border StrokeThickness="0" StrokeShape="RoundRectangle 16" BackgroundColor="#FFFFFF" Padding="16">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="2009 Typhoon Ondoy" FontAttributes="Bold" FontSize="16" />
+                        <Image Source="onboarding_flood.jpg" Aspect="AspectFill" HeightRequest="200" />
+                    </VerticalStackLayout>
+                </Border>
+                
+                <Border StrokeThickness="0" StrokeShape="RoundRectangle 16" BackgroundColor="#FFFFFF" Padding="16">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="2020 Typhoon Ulysses" FontAttributes="Bold" FontSize="16" />
+                        <Image Source="carousel_ar_route.png" Aspect="AspectFill" HeightRequest="200" />
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

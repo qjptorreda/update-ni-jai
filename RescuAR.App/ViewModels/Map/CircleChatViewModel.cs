@@ -19,6 +19,16 @@ public class ChatMessageItem
     public string UserId { get; set; } = string.Empty;
     public string SenderName { get; set; } = string.Empty;
     public string SenderAvatarUrl { get; set; } = string.Empty;
+    public string SenderInitials
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(SenderName)) return "?";
+            var parts = SenderName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 1) return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+            return $"{parts[0][0]}{parts[parts.Length - 1][0]}".ToUpper();
+        }
+    }
     public string MessageText { get; set; } = string.Empty;
     public string MediaUrl { get; set; } = string.Empty;
     public string MediaType { get; set; } = "Text";
@@ -46,7 +56,21 @@ public partial class CircleChatViewModel : ObservableObject
     private string circleId = string.Empty;
 
     [ObservableProperty]
-    private string circleName = "Family Circle Chat";
+    private string circleName = "Family Circle";
+
+    [ObservableProperty]
+    private string groupAvatarUrl = string.Empty;
+
+    [ObservableProperty]
+    private bool hasGroupAvatar = false;
+
+    public bool HasNoGroupAvatar => !HasGroupAvatar;
+
+    [ObservableProperty]
+    private string inviteCode = string.Empty;
+
+    [ObservableProperty]
+    private string memberCountText = "Family Updates";
 
     [ObservableProperty]
     private string newMessageText = string.Empty;
@@ -89,7 +113,7 @@ public partial class CircleChatViewModel : ObservableObject
         if (!string.IsNullOrEmpty(value))
         {
             RefreshCurrentUserId();
-            _ = LoadMessagesAsync();
+            _ = LoadCircleDetailsAndMessagesAsync();
             _chatTimer?.Start();
         }
     }
@@ -103,13 +127,47 @@ public partial class CircleChatViewModel : ObservableObject
         }
 
         RefreshCurrentUserId();
-        await LoadMessagesAsync();
+        await LoadCircleDetailsAndMessagesAsync();
         _chatTimer?.Start();
     }
 
     public void StopTimer()
     {
         _chatTimer?.Stop();
+    }
+
+    public async Task LoadCircleDetailsAndMessagesAsync()
+    {
+        if (string.IsNullOrEmpty(CircleId)) return;
+
+        try
+        {
+            // Load circle metadata (group avatar, invite code, members count)
+            var circles = await _safetyCircleService.GetMyCirclesAsync();
+            var circle = circles.FirstOrDefault(c => c.Id == CircleId);
+            if (circle != null)
+            {
+                InviteCode = circle.InviteCode;
+                CircleName = circle.Name;
+            }
+
+            var members = await _safetyCircleService.GetCircleMembersAsync(CircleId);
+            if (members != null && members.Count > 0)
+            {
+                MemberCountText = $"{members.Count} {(members.Count == 1 ? "Member" : "Members")} Online";
+            }
+
+            // Load saved group photo from preferences if exists
+            var savedGroupPhoto = Preferences.Get($"circle_avatar_{CircleId}", string.Empty);
+            if (!string.IsNullOrWhiteSpace(savedGroupPhoto))
+            {
+                GroupAvatarUrl = savedGroupPhoto;
+                HasGroupAvatar = true;
+            }
+        }
+        catch { }
+
+        await LoadMessagesAsync();
     }
 
     public async Task LoadMessagesAsync()
@@ -160,7 +218,7 @@ public partial class CircleChatViewModel : ObservableObject
             {
                 Id = m.Id,
                 UserId = m.UserId,
-                SenderName = m.SenderName,
+                SenderName = !string.IsNullOrWhiteSpace(m.SenderName) ? m.SenderName : "Family Member",
                 SenderAvatarUrl = m.SenderAvatarUrl,
                 MessageText = m.MessageText,
                 MediaUrl = m.MediaUrl,
@@ -181,7 +239,7 @@ public partial class CircleChatViewModel : ObservableObject
 
         RefreshCurrentUserId();
 
-        // 1. Optimistically display in UI immediately so the user instantly sees their chat bubble
+        // Optimistic display immediately
         var localItem = new ChatMessageItem
         {
             Id = Guid.NewGuid().ToString(),
@@ -199,7 +257,7 @@ public partial class CircleChatViewModel : ObservableObject
             MessageAdded?.Invoke(localItem);
         });
 
-        // 2. Send to backend/Supabase
+        // Send to cloud
         if (!string.IsNullOrEmpty(CircleId))
         {
             _ = Task.Run(async () =>
@@ -277,6 +335,54 @@ public partial class CircleChatViewModel : ObservableObject
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"PickVideo error: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task PickGroupPhotoAsync()
+    {
+        try
+        {
+            var file = await MediaPicker.Default.PickPhotoAsync();
+            if (file != null)
+            {
+                IsUploading = true;
+                UploadStatusText = "Updating group photo...";
+
+                using var stream = await file.OpenReadAsync();
+                var uploadedUrl = await CloudinaryService.UploadImageStreamAsync(stream, file.FileName);
+
+                if (!string.IsNullOrWhiteSpace(uploadedUrl))
+                {
+                    GroupAvatarUrl = uploadedUrl;
+                    HasGroupAvatar = true;
+                    Preferences.Set($"circle_avatar_{CircleId}", uploadedUrl);
+
+                    if (Shell.Current != null)
+                        await Shell.Current.DisplayAlert("Group Photo Updated", "The Safety Circle group photo has been updated!", "OK");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"PickGroupPhoto error: {ex.Message}");
+        }
+        finally
+        {
+            IsUploading = false;
+            UploadStatusText = string.Empty;
+        }
+    }
+
+    [RelayCommand]
+    private async Task CopyInviteCodeAsync()
+    {
+        if (string.IsNullOrWhiteSpace(InviteCode)) return;
+
+        await Clipboard.Default.SetTextAsync(InviteCode);
+        if (Shell.Current != null)
+        {
+            await Shell.Current.DisplayAlert("Copied to Clipboard!", $"Invite Code: {InviteCode}\nShare this with family members so they can join and chat with you.", "OK");
         }
     }
 

@@ -46,6 +46,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<CommunityReportService>();
         builder.Services.AddSingleton<IOsmGeocodingService, OsmGeocodingService>();
         builder.Services.AddSingleton<AdvisoryService>();
+        builder.Services.AddSingleton<RescuAR.App.Services.Cloud.SafetyCircleService>();
 
             // Initialize SQLite for Android (Required for reading .mbtiles)
             SQLitePCL.Batteries_V2.Init();
@@ -94,6 +95,9 @@ public static class MauiProgram
             builder.Services.AddTransient<QuickActionsPage>();
             builder.Services.AddTransient<SafetyCircleOverviewViewModel>();
             builder.Services.AddTransient<SafetyCircleOverviewPage>();
+            builder.Services.AddTransient<SafetyCircleViewModel>();
+            builder.Services.AddTransient<SafetyCirclePage>();
+            builder.Services.AddTransient<RescuAR.App.Views.Profile.SafetyCircleSettingsPage>();
             builder.Services.AddTransient<WeatherInformationViewModel>();
             builder.Services.AddTransient<WeatherInformationPage>();
 

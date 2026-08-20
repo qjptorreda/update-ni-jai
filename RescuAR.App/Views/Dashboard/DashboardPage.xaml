@@ -396,5 +396,27 @@
                 </VerticalStackLayout>
             </Border>
         </Grid>
+
+        <!-- Permissions Pop-Up Modal Overlay (First-Time Users) -->
+        <Grid IsVisible="{Binding IsPermissionsPopupVisible}" BackgroundColor="#90000000" Padding="20" HorizontalOptions="Fill" VerticalOptions="Fill">
+            <Border VerticalOptions="Center" HorizontalOptions="Center" MaximumWidthRequest="340" StrokeThickness="0" StrokeShape="RoundRectangle 24" BackgroundColor="#FFFFFF" Padding="24">
+                <VerticalStackLayout Spacing="16">
+                    <!-- Icon -->
+                    <Border BackgroundColor="#E0F2FE" StrokeThickness="0" StrokeShape="RoundRectangle 24" WidthRequest="48" HeightRequest="48" HorizontalOptions="Center">
+                        <Path Data="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" 
+                              Fill="#0EA5E9" Aspect="Uniform" WidthRequest="24" HeightRequest="24" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    
+                    <Label Text="We need some permissions" TextColor="#0F172A" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center" />
+                    <Label Text="To provide you with accurate safety routes and emergency alerts, RescuAR requires access to your location, camera, and notifications." TextColor="#64748B" FontSize="14" HorizontalTextAlignment="Center" LineBreakMode="WordWrap" />
+                    
+                    <VerticalStackLayout Spacing="12" Margin="0,12,0,0">
+                        <Button Text="Allow Permissions" TextColor="#FFFFFF" BackgroundColor="#0A8491" CornerRadius="12" HeightRequest="48" FontSize="15" FontAttributes="Bold" Command="{Binding GrantPermissionsCommand}" />
+                        <Button Text="Skip for now" TextColor="#64748B" BackgroundColor="Transparent" FontSize="14" FontAttributes="Bold" Command="{Binding GrantPermissionsCommand}" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
     </Grid>
 </ContentPage>

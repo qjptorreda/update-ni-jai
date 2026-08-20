@@ -66,6 +66,9 @@ public partial class DashboardViewModel : ObservableObject
     public partial bool IsPopupVisible { get; set; }
 
     [ObservableProperty]
+    public partial bool IsPermissionsPopupVisible { get; set; }
+
+    [ObservableProperty]
     public partial ObservableCollection<DashboardCarouselItem> CarouselItems { get; set; } = new();
 
     public DashboardViewModel()
@@ -131,6 +134,7 @@ public partial class DashboardViewModel : ObservableObject
 
     public void RefreshDashboard()
     {
+        UserName = Preferences.Get("UserName", "Aubrey");
         PreparednessScore = Preferences.Get("PASS_Score", 100);
         ScoreProgress = PreparednessScore / 100.0;
         PreparednessStatus = Preferences.Get("PASS_Status", "Highly Prepared");
@@ -139,6 +143,13 @@ public partial class DashboardViewModel : ObservableObject
         if (hour < 12) Greeting = "Good morning,";
         else if (hour < 18) Greeting = "Good afternoon,";
         else Greeting = "Good evening,";
+
+        // Check if permissions have been requested before
+        bool hasRequestedPermissions = Preferences.Get("HasRequestedPermissions", false);
+        if (!hasRequestedPermissions)
+        {
+            IsPermissionsPopupVisible = true;
+        }
 
         MainThread.BeginInvokeOnMainThread(async () =>
         {
@@ -388,6 +399,25 @@ public partial class DashboardViewModel : ObservableObject
         if (Shell.Current != null)
         {
             await Shell.Current.GoToAsync("AdvisoryFeedPage");
+        }
+    }
+
+    [RelayCommand]
+    private async Task GrantPermissionsAsync()
+    {
+        try
+        {
+            await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+            await Permissions.RequestAsync<Permissions.Camera>();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error requesting permissions: {ex.Message}");
+        }
+        finally
+        {
+            Preferences.Set("HasRequestedPermissions", true);
+            IsPermissionsPopupVisible = false;
         }
     }
 }

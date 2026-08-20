@@ -191,8 +191,49 @@ namespace RescuAR.App.Services.Cloud
             return locationsResponse.Models;
         }
 
-        // --- Chat Messaging ---
+        // --- Chat Messaging with Permanent Local & Cloud Persistence ---
         private static readonly Dictionary<string, List<SupabaseCircleMessage>> _inMemoryMessages = new();
+
+        private string GetLocalChatFilePath(string circleId)
+        {
+            return Path.Combine(FileSystem.AppDataDirectory, $"chat_cache_{circleId}.json");
+        }
+
+        private List<SupabaseCircleMessage> LoadLocalMessages(string circleId)
+        {
+            try
+            {
+                var path = GetLocalChatFilePath(circleId);
+                if (File.Exists(path))
+                {
+                    var json = File.ReadAllText(path);
+                    if (!string.IsNullOrWhiteSpace(json))
+                    {
+                        var list = Newtonsoft.Json.JsonConvert.DeserializeObject<List<SupabaseCircleMessage>>(json);
+                        if (list != null) return list;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"LoadLocalMessages error: {ex.Message}");
+            }
+            return new List<SupabaseCircleMessage>();
+        }
+
+        private void SaveLocalMessages(string circleId, List<SupabaseCircleMessage> messages)
+        {
+            try
+            {
+                var path = GetLocalChatFilePath(circleId);
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(messages);
+                File.WriteAllText(path, json);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"SaveLocalMessages error: {ex.Message}");
+            }
+        }
 
         public async Task<SupabaseCircleMessage?> SendMessageAsync(string circleId, string messageText, string? mediaUrl = null, string? mediaType = "Text")
         {
@@ -233,14 +274,18 @@ namespace RescuAR.App.Services.Cloud
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Always store in memory cache
+            // 1. Save to local disk cache permanently (persists across logouts)
+            var localList = LoadLocalMessages(circleId);
+            localList.Add(msg);
+            SaveLocalMessages(circleId, localList);
+
+            // 2. Save in memory
             lock (_inMemoryMessages)
             {
-                if (!_inMemoryMessages.ContainsKey(circleId))
-                    _inMemoryMessages[circleId] = new List<SupabaseCircleMessage>();
-                _inMemoryMessages[circleId].Add(msg);
+                _inMemoryMessages[circleId] = localList;
             }
 
+            // 3. Save to Supabase Cloud
             try
             {
                 var client = GetClient();
@@ -249,13 +294,17 @@ namespace RescuAR.App.Services.Cloud
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Supabase send message error (using local memory store): {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Supabase send message error (persisted locally): {ex.Message}");
                 return msg;
             }
         }
 
         public async Task<List<SupabaseCircleMessage>> GetCircleMessagesAsync(string circleId)
         {
+            // Load local persistent messages first
+            var merged = LoadLocalMessages(circleId);
+
+            // Try fetching from Supabase Cloud and merge
             try
             {
                 var client = GetClient();
@@ -266,24 +315,28 @@ namespace RescuAR.App.Services.Cloud
 
                 if (resp.Models != null && resp.Models.Count > 0)
                 {
-                    return resp.Models;
+                    foreach (var remoteMsg in resp.Models)
+                    {
+                        if (!merged.Any(m => m.Id == remoteMsg.Id))
+                        {
+                            merged.Add(remoteMsg);
+                        }
+                    }
+                    // Save back merged results to disk cache
+                    SaveLocalMessages(circleId, merged);
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"GetCircleMessages remote error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"GetCircleMessages remote sync error: {ex.Message}");
             }
 
-            // Return in-memory fallback if remote table is empty or pending
             lock (_inMemoryMessages)
             {
-                if (_inMemoryMessages.TryGetValue(circleId, out var list))
-                {
-                    return list.OrderBy(m => m.CreatedAt).ToList();
-                }
+                _inMemoryMessages[circleId] = merged;
             }
 
-            return new List<SupabaseCircleMessage>();
+            return merged.OrderBy(m => m.CreatedAt).ToList();
         }
 
         private string GenerateInviteCode()

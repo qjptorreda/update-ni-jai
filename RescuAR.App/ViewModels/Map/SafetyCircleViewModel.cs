@@ -118,32 +118,214 @@ public partial class SafetyCircleViewModel : ObservableObject
         return status == PermissionStatus.Granted;
     }
 
+    private readonly System.Collections.Generic.Dictionary<string, byte[]> _avatarRawBytesCache = new();
+
+    private (int percent, bool isCharging) GetRealtimeBatteryLevel()
+    {
+        int batteryLevel = 0;
+        bool isCharging = false;
+
+#if ANDROID
+        try
+        {
+            var context = Android.App.Application.Context;
+            var filter = new Android.Content.IntentFilter(Android.Content.Intent.ActionBatteryChanged);
+            var batteryStatus = context.RegisterReceiver(null, filter);
+            if (batteryStatus != null)
+            {
+                int level = batteryStatus.GetIntExtra(Android.OS.BatteryManager.ExtraLevel, -1);
+                int scale = batteryStatus.GetIntExtra(Android.OS.BatteryManager.ExtraScale, -1);
+                if (level >= 0 && scale > 0)
+                {
+                    batteryLevel = (int)Math.Round((level / (float)scale) * 100);
+                }
+
+                int status = batteryStatus.GetIntExtra(Android.OS.BatteryManager.ExtraStatus, -1);
+                isCharging = status == (int)Android.OS.BatteryStatus.Charging || status == (int)Android.OS.BatteryStatus.Full;
+            }
+        }
+        catch { }
+#endif
+
+        if (batteryLevel <= 0)
+        {
+            try
+            {
+                var charge = Battery.Default.ChargeLevel;
+                if (charge >= 0)
+                {
+                    batteryLevel = (int)Math.Round(charge * 100);
+                }
+                isCharging = Battery.Default.State == BatteryState.Charging;
+            }
+            catch { }
+        }
+
+        if (batteryLevel <= 0) batteryLevel = 50;
+
+        return (batteryLevel, isCharging);
+    }
+
+    private int GenerateLife360PinBitmap(byte[]? avatarBytes, string name, string colorHex, bool isMe, string initials)
+    {
+        const int width = 140;
+        const int height = 175;
+        const float circleRadius = 40f;
+        const float circleCenterX = width / 2f;
+        const float circleCenterY = 48f;
+
+        using var bitmap = new SkiaSharp.SKBitmap(width, height);
+        using var canvas = new SkiaSharp.SKCanvas(bitmap);
+        canvas.Clear(SkiaSharp.SKColors.Transparent);
+
+        var pinColor = SkiaSharp.SKColor.Parse(colorHex);
+
+        // 1. Draw Pointer Triangle at bottom of circle pointing down
+        using (var trianglePath = new SkiaSharp.SKPath())
+        {
+            trianglePath.MoveTo(circleCenterX - 14, circleCenterY + circleRadius - 4);
+            trianglePath.LineTo(circleCenterX + 14, circleCenterY + circleRadius - 4);
+            trianglePath.LineTo(circleCenterX, circleCenterY + circleRadius + 18);
+            trianglePath.Close();
+
+            using var trianglePaint = new SkiaSharp.SKPaint
+            {
+                Color = pinColor,
+                IsAntialias = true,
+                Style = SkiaSharp.SKPaintStyle.Fill
+            };
+            canvas.DrawPath(trianglePath, trianglePaint);
+        }
+
+        // 2. Draw Outer Border Circle
+        using (var borderPaint = new SkiaSharp.SKPaint
+        {
+            Color = pinColor,
+            IsAntialias = true,
+            Style = SkiaSharp.SKPaintStyle.Fill
+        })
+        {
+            canvas.DrawCircle(circleCenterX, circleCenterY, circleRadius, borderPaint);
+        }
+
+        // 3. Draw Inner White Ring
+        using (var whiteRingPaint = new SkiaSharp.SKPaint
+        {
+            Color = SkiaSharp.SKColors.White,
+            IsAntialias = true,
+            Style = SkiaSharp.SKPaintStyle.Fill
+        })
+        {
+            canvas.DrawCircle(circleCenterX, circleCenterY, circleRadius - 4, whiteRingPaint);
+        }
+
+        // 4. Draw Avatar Image or Initials
+        float innerRadius = circleRadius - 6;
+        bool drewAvatar = false;
+        if (avatarBytes != null && avatarBytes.Length > 0)
+        {
+            try
+            {
+                using var origBitmap = SkiaSharp.SKBitmap.Decode(avatarBytes);
+                if (origBitmap != null)
+                {
+                    using var shader = SkiaSharp.SKShader.CreateBitmap(
+                        origBitmap,
+                        SkiaSharp.SKShaderTileMode.Clamp,
+                        SkiaSharp.SKShaderTileMode.Clamp,
+                        SkiaSharp.SKMatrix.CreateScale(
+                            (innerRadius * 2f) / origBitmap.Width,
+                            (innerRadius * 2f) / origBitmap.Height
+                        ).PostConcat(SkiaSharp.SKMatrix.CreateTranslation(circleCenterX - innerRadius, circleCenterY - innerRadius))
+                    );
+
+                    using var avatarPaint = new SkiaSharp.SKPaint
+                    {
+                        Shader = shader,
+                        IsAntialias = true
+                    };
+                    canvas.DrawCircle(circleCenterX, circleCenterY, innerRadius, avatarPaint);
+                    drewAvatar = true;
+                }
+            }
+            catch { }
+        }
+
+        if (!drewAvatar)
+        {
+            // Draw Initials with colored background
+            using var initBgPaint = new SkiaSharp.SKPaint
+            {
+                Color = pinColor,
+                IsAntialias = true,
+                Style = SkiaSharp.SKPaintStyle.Fill
+            };
+            canvas.DrawCircle(circleCenterX, circleCenterY, innerRadius, initBgPaint);
+
+            using var textPaint = new SkiaSharp.SKPaint
+            {
+                Color = SkiaSharp.SKColors.White,
+                TextSize = 24,
+                IsAntialias = true,
+                TextAlign = SkiaSharp.SKTextAlign.Center,
+                Typeface = SkiaSharp.SKTypeface.FromFamilyName("sans-serif", SkiaSharp.SKFontStyle.Bold)
+            };
+            canvas.DrawText(initials, circleCenterX, circleCenterY + 9, textPaint);
+        }
+
+        // 5. Draw Name Pill Tag at the bottom
+        string displayName = isMe ? "Me now" : (name.Split(' ')[0]);
+        float pillY = circleCenterY + circleRadius + 22;
+        float pillHeight = 26;
+        
+        using var pillTextPaint = new SkiaSharp.SKPaint
+        {
+            Color = SkiaSharp.SKColors.White,
+            TextSize = 16,
+            IsAntialias = true,
+            TextAlign = SkiaSharp.SKTextAlign.Center,
+            Typeface = SkiaSharp.SKTypeface.FromFamilyName("sans-serif", SkiaSharp.SKFontStyle.Bold)
+        };
+
+        float textWidth = pillTextPaint.MeasureText(displayName);
+        float pillWidth = Math.Max(70, textWidth + 24);
+        float pillX = circleCenterX - (pillWidth / 2f);
+
+        using (var pillPaint = new SkiaSharp.SKPaint
+        {
+            Color = SkiaSharp.SKColor.Parse("#1E293B"),
+            IsAntialias = true,
+            Style = SkiaSharp.SKPaintStyle.Fill
+        })
+        {
+            var roundRect = new SkiaSharp.SKRoundRect(new SkiaSharp.SKRect(pillX, pillY, pillX + pillWidth, pillY + pillHeight), 13, 13);
+            canvas.DrawRoundRect(roundRect, pillPaint);
+        }
+
+        canvas.DrawText(displayName, circleCenterX, pillY + 19, pillTextPaint);
+
+        using var image = SkiaSharp.SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+        using var ms = new MemoryStream();
+        data.SaveTo(ms);
+        return Mapsui.Styles.BitmapRegistry.Instance.Register(ms.ToArray());
+    }
+
     private async Task PollLocationsAsync()
     {
         try
         {
-            // 1. Push our own location (if we have permission)
+            // 1. Push our own location with real-time battery
+            var (myBatteryPercent, myIsCharging) = GetRealtimeBatteryLevel();
+            string myBatteryStatus = $"{myBatteryPercent}%{(myIsCharging ? "⚡" : "")}";
+
             var hasPermission = await CheckAndRequestLocationPermission();
             if (hasPermission)
             {
                 var loc = await Geolocation.Default.GetLocationAsync(new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(3)));
                 if (loc != null)
                 {
-                    // Read device battery percentage
-                    string myBatteryStatus = string.Empty;
-                    try
-                    {
-                        var charge = Battery.Default.ChargeLevel;
-                        int percent = (int)Math.Round(charge * 100);
-                        if (percent > 0)
-                        {
-                            bool isCharging = Battery.Default.State == BatteryState.Charging;
-                            myBatteryStatus = $"{percent}%{(isCharging ? "⚡" : "")}";
-                        }
-                    }
-                    catch { }
-
-                    string pushStatus = string.IsNullOrEmpty(myBatteryStatus) ? "Online" : $"Online|{myBatteryStatus}";
+                    string pushStatus = $"Online|{myBatteryStatus}";
                     await _safetyCircleService.PushLocationAsync(loc.Latitude, loc.Longitude, pushStatus);
                     
                     // Auto-center map on user's current GPS location on first fix
@@ -163,20 +345,6 @@ public partial class SafetyCircleViewModel : ObservableObject
             var locations = await _safetyCircleService.GetCircleLocationsAsync(_currentCircleId);
             string currentUserId = string.Empty;
             try { currentUserId = _safetyCircleService.GetCurrentUserId(); } catch { }
-
-            int myCurrentBatteryPercent = 100;
-            bool myCurrentIsCharging = false;
-            try
-            {
-                var charge = Battery.Default.ChargeLevel;
-                if (charge >= 0)
-                {
-                    myCurrentBatteryPercent = (int)Math.Round(charge * 100);
-                    if (myCurrentBatteryPercent <= 0) myCurrentBatteryPercent = 100;
-                }
-                myCurrentIsCharging = Battery.Default.State == BatteryState.Charging;
-            }
-            catch { }
 
             CircleMembers.Clear();
             foreach (var member in members)
@@ -213,12 +381,12 @@ public partial class SafetyCircleViewModel : ObservableObject
                 bool isMe = string.Equals(member.Id, currentUserId, StringComparison.OrdinalIgnoreCase);
                 if (isMe || string.IsNullOrEmpty(batteryText))
                 {
-                    batteryText = $"{myCurrentBatteryPercent}%";
-                    batteryIcon = myCurrentIsCharging ? "⚡" : "🔋";
-                    batteryColor = myCurrentIsCharging
+                    batteryText = $"{myBatteryPercent}%";
+                    batteryIcon = myIsCharging ? "⚡" : "🔋";
+                    batteryColor = myIsCharging
                         ? Microsoft.Maui.Graphics.Color.FromArgb("#2563EB")
-                        : (myCurrentBatteryPercent <= 20 ? Microsoft.Maui.Graphics.Color.FromArgb("#EF4444")
-                        : (myCurrentBatteryPercent <= 50 ? Microsoft.Maui.Graphics.Color.FromArgb("#F59E0B")
+                        : (myBatteryPercent <= 20 ? Microsoft.Maui.Graphics.Color.FromArgb("#EF4444")
+                        : (myBatteryPercent <= 50 ? Microsoft.Maui.Graphics.Color.FromArgb("#F59E0B")
                         : Microsoft.Maui.Graphics.Color.FromArgb("#16A34A")));
                 }
 
@@ -236,28 +404,27 @@ public partial class SafetyCircleViewModel : ObservableObject
                     AvatarUrl = member.AvatarUrl
                 };
 
-                // Download and register bitmap for Mapsui if available and not cached
+                // Fetch avatar bytes for SkiaSharp Life360 pin rendering
+                byte[]? avatarBytes = null;
                 if (!string.IsNullOrEmpty(cm.AvatarUrl))
                 {
-                    if (!_avatarBitmapCache.ContainsKey(member.Id))
+                    if (!_avatarRawBytesCache.TryGetValue(member.Id, out avatarBytes))
                     {
                         try
                         {
-                            var imageBytes = await _httpClient.GetByteArrayAsync(cm.AvatarUrl);
-                            int bitmapId = Mapsui.Styles.BitmapRegistry.Instance.Register(imageBytes);
-                            _avatarBitmapCache[member.Id] = bitmapId;
+                            avatarBytes = await _httpClient.GetByteArrayAsync(cm.AvatarUrl);
+                            _avatarRawBytesCache[member.Id] = avatarBytes;
                         }
                         catch (Exception ex)
                         {
                             System.Diagnostics.Debug.WriteLine($"Failed to download avatar for {member.Id}: {ex.Message}");
                         }
                     }
-
-                    if (_avatarBitmapCache.TryGetValue(member.Id, out int cachedBitmapId))
-                    {
-                        cm.AvatarBitmapId = cachedBitmapId;
-                    }
                 }
+
+                string pinColorHex = isMe ? "#10B981" : cm.ColorTheme.ToHex();
+                int pinBitmapId = GenerateLife360PinBitmap(avatarBytes, cm.Name, pinColorHex, isMe, cm.Initials);
+                cm.AvatarBitmapId = pinBitmapId;
 
                 CircleMembers.Add(cm);
             }
@@ -322,17 +489,17 @@ public partial class SafetyCircleViewModel : ObservableObject
             // Halo (Translucent Outer Ring)
             var haloFeature = new Mapsui.Nts.GeometryFeature(new NetTopologySuite.Geometries.Point(x, y));
             var colorTheme = member.ColorTheme;
-            var translucentColor = new Mapsui.Styles.Color((int)(colorTheme.Red * 255), (int)(colorTheme.Green * 255), (int)(colorTheme.Blue * 255), 40); // 40 alpha = ~15% opacity
+            var translucentColor = new Mapsui.Styles.Color((int)(colorTheme.Red * 255), (int)(colorTheme.Green * 255), (int)(colorTheme.Blue * 255), 40);
             haloFeature.Styles.Add(new Mapsui.Styles.SymbolStyle
             {
                 SymbolType = Mapsui.Styles.SymbolType.Ellipse,
-                SymbolScale = 1.2, // Larger than pin
+                SymbolScale = 1.2,
                 Fill = new Mapsui.Styles.Brush(translucentColor),
                 Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.Transparent)
             });
             features.Add(haloFeature);
 
-            // Inner Pin (Dot or Avatar)
+            // Inner Pin (Life360 Avatar + Pointer + Name Pill)
             var feature = new Mapsui.Nts.GeometryFeature(new NetTopologySuite.Geometries.Point(x, y));
             
             if (member.AvatarBitmapId.HasValue)
@@ -340,17 +507,8 @@ public partial class SafetyCircleViewModel : ObservableObject
                 feature.Styles.Add(new Mapsui.Styles.SymbolStyle
                 {
                     BitmapId = member.AvatarBitmapId.Value,
-                    SymbolScale = 0.25
-                });
-            }
-            else
-            {
-                feature.Styles.Add(new Mapsui.Styles.SymbolStyle
-                {
-                    SymbolType = Mapsui.Styles.SymbolType.Ellipse,
                     SymbolScale = 0.5,
-                    Fill = new Mapsui.Styles.Brush(Mapsui.Styles.Color.FromString(member.ColorTheme.ToHex())), 
-                    Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 3)
+                    SymbolOffset = new Mapsui.Styles.Offset(0, 35)
                 });
             }
             features.Add(feature);
@@ -369,6 +527,7 @@ public partial class SafetyCircleViewModel : ObservableObject
         };
 
         map.Layers.Add(_pinsLayer);
+        map.Refresh();
     }
 
     [RelayCommand]

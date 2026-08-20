@@ -238,9 +238,22 @@
                                         </Border>
                                         
                                         <!-- Info -->
-                                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Margin="16,0">
+                                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Margin="16,0" Spacing="4">
                                             <Label Text="{Binding Name}" TextColor="#0F172A" FontSize="16" FontAttributes="Bold" />
-                                            <Label Text="{Binding StatusText}" TextColor="#94A3B8" FontSize="13" />
+                                            <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                                <Label Text="{Binding StatusText}" TextColor="#64748B" FontSize="13" VerticalOptions="Center" />
+                                                
+                                                <!-- Battery Percentage Badge -->
+                                                <Border IsVisible="{Binding HasBattery}" BackgroundColor="#F8FAFC" Stroke="#E2E8F0" StrokeThickness="1" Padding="6,2" VerticalOptions="Center">
+                                                    <Border.StrokeShape>
+                                                        <RoundRectangle CornerRadius="6" />
+                                                    </Border.StrokeShape>
+                                                    <HorizontalStackLayout Spacing="4" VerticalOptions="Center">
+                                                        <Label Text="{Binding BatteryIcon}" FontSize="11" VerticalOptions="Center" />
+                                                        <Label Text="{Binding BatteryText}" TextColor="{Binding BatteryColor}" FontSize="11" FontAttributes="Bold" VerticalOptions="Center" />
+                                                    </HorizontalStackLayout>
+                                                </Border>
+                                            </HorizontalStackLayout>
                                         </VerticalStackLayout>
                                         
                                         <BoxView Grid.ColumnSpan="2" VerticalOptions="End" HeightRequest="1" BackgroundColor="#F1F5F9" Margin="-24,0" />

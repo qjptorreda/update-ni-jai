@@ -20,6 +20,10 @@ public class CircleMember
     public string Name { get; set; } = string.Empty;
     public string Initials { get; set; } = string.Empty;
     public string StatusText { get; set; } = string.Empty;
+    public string BatteryText { get; set; } = string.Empty;
+    public string BatteryIcon { get; set; } = "🔋";
+    public Microsoft.Maui.Graphics.Color BatteryColor { get; set; } = Microsoft.Maui.Graphics.Color.FromArgb("#16A34A");
+    public bool HasBattery => !string.IsNullOrEmpty(BatteryText);
     public Microsoft.Maui.Graphics.Color ColorTheme { get; set; } = Microsoft.Maui.Graphics.Colors.Teal;
     public double Latitude { get; set; }
     public double Longitude { get; set; }
@@ -125,7 +129,22 @@ public partial class SafetyCircleViewModel : ObservableObject
                 var loc = await Geolocation.Default.GetLocationAsync(new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(3)));
                 if (loc != null)
                 {
-                    await _safetyCircleService.PushLocationAsync(loc.Latitude, loc.Longitude, "Online");
+                    // Read device battery percentage
+                    string myBatteryStatus = string.Empty;
+                    try
+                    {
+                        var charge = Battery.Default.ChargeLevel;
+                        int percent = (int)Math.Round(charge * 100);
+                        if (percent > 0)
+                        {
+                            bool isCharging = Battery.Default.State == BatteryState.Charging;
+                            myBatteryStatus = $"{percent}%{(isCharging ? "⚡" : "")}";
+                        }
+                    }
+                    catch { }
+
+                    string pushStatus = string.IsNullOrEmpty(myBatteryStatus) ? "Online" : $"Online|{myBatteryStatus}";
+                    await _safetyCircleService.PushLocationAsync(loc.Latitude, loc.Longitude, pushStatus);
                     
                     // Auto-center map on user's current GPS location on first fix
                     if (!_hasCenteredOnUser && Map != null)
@@ -142,16 +161,67 @@ public partial class SafetyCircleViewModel : ObservableObject
             // 2. Pull other members
             var members = await _safetyCircleService.GetCircleMembersAsync(_currentCircleId);
             var locations = await _safetyCircleService.GetCircleLocationsAsync(_currentCircleId);
+            string currentUserId = string.Empty;
+            try { currentUserId = _safetyCircleService.GetCurrentUserId(); } catch { }
 
             CircleMembers.Clear();
             foreach (var member in members)
             {
                 var userLoc = locations.FirstOrDefault(l => l.UserId == member.Id);
+                string rawStatus = userLoc?.StatusText ?? "Offline";
+                string displayStatus = rawStatus;
+                string batteryText = string.Empty;
+                string batteryIcon = "🔋";
+                var batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#16A34A");
+
+                if (rawStatus.Contains("|"))
+                {
+                    var parts = rawStatus.Split('|');
+                    displayStatus = parts[0];
+                    batteryText = parts[1];
+                    if (batteryText.Contains("⚡"))
+                    {
+                        batteryIcon = "⚡";
+                        batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#2563EB");
+                    }
+                    else
+                    {
+                        var cleanVal = batteryText.Replace("%", "").Trim();
+                        if (int.TryParse(cleanVal, out int bVal))
+                        {
+                            if (bVal <= 20) batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#EF4444");
+                            else if (bVal <= 50) batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#F59E0B");
+                            else batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#16A34A");
+                        }
+                    }
+                }
+                else if (member.Id == currentUserId)
+                {
+                    try
+                    {
+                        int localBatt = (int)Math.Round(Battery.Default.ChargeLevel * 100);
+                        if (localBatt > 0)
+                        {
+                            bool localCharging = Battery.Default.State == BatteryState.Charging;
+                            batteryText = $"{localBatt}%{(localCharging ? "⚡" : "")}";
+                            batteryIcon = localCharging ? "⚡" : "🔋";
+                            if (localCharging) batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#2563EB");
+                            else if (localBatt <= 20) batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#EF4444");
+                            else if (localBatt <= 50) batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#F59E0B");
+                            else batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#16A34A");
+                        }
+                    }
+                    catch { }
+                }
+
                 var cm = new CircleMember
                 {
                     Name = $"{member.FirstName} {member.LastName}".Trim(),
                     Initials = (member.FirstName?.Length > 0 ? member.FirstName.Substring(0, 1) : "") + (member.LastName?.Length > 0 ? member.LastName.Substring(0, 1) : ""),
-                    StatusText = userLoc?.StatusText ?? "Offline",
+                    StatusText = displayStatus,
+                    BatteryText = batteryText,
+                    BatteryIcon = batteryIcon,
+                    BatteryColor = batteryColor,
                     Latitude = userLoc?.Latitude ?? 0,
                     Longitude = userLoc?.Longitude ?? 0,
                     ColorTheme = GetColorForUser(member.Id),

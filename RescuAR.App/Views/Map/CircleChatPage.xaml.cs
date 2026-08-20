@@ -9,6 +9,18 @@ public partial class CircleChatPage : ContentPage
     {
         InitializeComponent();
         BindingContext = viewModel;
+
+        viewModel.MessageAdded += (item) =>
+        {
+            try
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    MessagesCollectionView.ScrollTo(item, position: ScrollToPosition.End, animate: true);
+                });
+            }
+            catch { }
+        };
     }
 
     protected override async void OnAppearing()

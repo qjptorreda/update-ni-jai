@@ -15,7 +15,7 @@ namespace RescuAR.App.ViewModels.Map;
 
 public class ChatMessageItem
 {
-    public string Id { get; set; } = string.Empty;
+    public string Id { get; set; } = Guid.NewGuid().ToString();
     public string UserId { get; set; } = string.Empty;
     public string SenderName { get; set; } = string.Empty;
     public string SenderAvatarUrl { get; set; } = string.Empty;
@@ -26,9 +26,9 @@ public class ChatMessageItem
     public bool IsImage => HasMedia && MediaType.Equals("Image", StringComparison.OrdinalIgnoreCase);
     public bool IsVideo => HasMedia && MediaType.Equals("Video", StringComparison.OrdinalIgnoreCase);
     public bool HasText => !string.IsNullOrWhiteSpace(MessageText);
-    public bool IsMyMessage { get; set; }
+    public bool IsMyMessage { get; set; } = true;
     public bool IsNotMyMessage => !IsMyMessage;
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string FormattedTime => CreatedAt.ToLocalTime().ToString("h:mm tt");
 }
 
@@ -39,6 +39,8 @@ public partial class CircleChatViewModel : ObservableObject
     private readonly SafetyCircleService _safetyCircleService;
     private IDispatcherTimer? _chatTimer;
     private string _currentUserId = string.Empty;
+
+    public event Action<ChatMessageItem>? MessageAdded;
 
     [ObservableProperty]
     private string circleId = string.Empty;
@@ -60,12 +62,7 @@ public partial class CircleChatViewModel : ObservableObject
     public CircleChatViewModel(SafetyCircleService safetyCircleService)
     {
         _safetyCircleService = safetyCircleService;
-
-        try
-        {
-            _currentUserId = _safetyCircleService.GetCurrentUserId();
-        }
-        catch { }
+        RefreshCurrentUserId();
 
         _chatTimer = Application.Current?.Dispatcher?.CreateTimer();
         if (_chatTimer != null)
@@ -75,10 +72,23 @@ public partial class CircleChatViewModel : ObservableObject
         }
     }
 
+    private void RefreshCurrentUserId()
+    {
+        try
+        {
+            _currentUserId = _safetyCircleService.GetCurrentUserId();
+        }
+        catch
+        {
+            _currentUserId = string.Empty;
+        }
+    }
+
     partial void OnCircleIdChanged(string value)
     {
         if (!string.IsNullOrEmpty(value))
         {
+            RefreshCurrentUserId();
             _ = LoadMessagesAsync();
             _chatTimer?.Start();
         }
@@ -92,6 +102,7 @@ public partial class CircleChatViewModel : ObservableObject
             CircleName = name;
         }
 
+        RefreshCurrentUserId();
         await LoadMessagesAsync();
         _chatTimer?.Start();
     }
@@ -107,8 +118,12 @@ public partial class CircleChatViewModel : ObservableObject
 
         try
         {
+            RefreshCurrentUserId();
             var rawMsgs = await _safetyCircleService.GetCircleMessagesAsync(CircleId);
-            UpdateMessagesCollection(rawMsgs);
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                UpdateMessagesCollection(rawMsgs);
+            });
         }
         catch (Exception ex)
         {
@@ -125,7 +140,10 @@ public partial class CircleChatViewModel : ObservableObject
             var rawMsgs = await _safetyCircleService.GetCircleMessagesAsync(CircleId);
             if (rawMsgs.Count != Messages.Count)
             {
-                UpdateMessagesCollection(rawMsgs);
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    UpdateMessagesCollection(rawMsgs);
+                });
             }
         }
         catch { }
@@ -133,9 +151,11 @@ public partial class CircleChatViewModel : ObservableObject
 
     private void UpdateMessagesCollection(System.Collections.Generic.List<SupabaseCircleMessage> rawMsgs)
     {
+        RefreshCurrentUserId();
         Messages.Clear();
         foreach (var m in rawMsgs)
         {
+            bool isMine = !string.IsNullOrEmpty(_currentUserId) ? (m.UserId == _currentUserId) : true;
             Messages.Add(new ChatMessageItem
             {
                 Id = m.Id,
@@ -145,7 +165,7 @@ public partial class CircleChatViewModel : ObservableObject
                 MessageText = m.MessageText,
                 MediaUrl = m.MediaUrl,
                 MediaType = m.MediaType,
-                IsMyMessage = m.UserId == _currentUserId,
+                IsMyMessage = isMine,
                 CreatedAt = m.CreatedAt
             });
         }
@@ -154,25 +174,37 @@ public partial class CircleChatViewModel : ObservableObject
     [RelayCommand]
     private async Task SendMessageAsync()
     {
-        if (string.IsNullOrWhiteSpace(NewMessageText) || string.IsNullOrEmpty(CircleId)) return;
+        if (string.IsNullOrWhiteSpace(NewMessageText)) return;
 
         var textToSend = NewMessageText.Trim();
         NewMessageText = string.Empty;
 
-        var sentMsg = await _safetyCircleService.SendMessageAsync(CircleId, textToSend, null, "Text");
-        if (sentMsg != null)
+        RefreshCurrentUserId();
+
+        // 1. Optimistically display in UI immediately so the user instantly sees their chat bubble
+        var localItem = new ChatMessageItem
         {
-            Messages.Add(new ChatMessageItem
+            Id = Guid.NewGuid().ToString(),
+            UserId = _currentUserId,
+            SenderName = "Me",
+            MessageText = textToSend,
+            MediaType = "Text",
+            IsMyMessage = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            Messages.Add(localItem);
+            MessageAdded?.Invoke(localItem);
+        });
+
+        // 2. Send to backend/Supabase
+        if (!string.IsNullOrEmpty(CircleId))
+        {
+            _ = Task.Run(async () =>
             {
-                Id = sentMsg.Id,
-                UserId = sentMsg.UserId,
-                SenderName = sentMsg.SenderName,
-                SenderAvatarUrl = sentMsg.SenderAvatarUrl,
-                MessageText = sentMsg.MessageText,
-                MediaUrl = sentMsg.MediaUrl,
-                MediaType = sentMsg.MediaType,
-                IsMyMessage = true,
-                CreatedAt = sentMsg.CreatedAt
+                await _safetyCircleService.SendMessageAsync(CircleId, textToSend, null, "Text");
             });
         }
     }
@@ -180,8 +212,6 @@ public partial class CircleChatViewModel : ObservableObject
     [RelayCommand]
     private async Task CapturePhotoAsync()
     {
-        if (string.IsNullOrEmpty(CircleId)) return;
-
         try
         {
             var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
@@ -219,8 +249,6 @@ public partial class CircleChatViewModel : ObservableObject
     [RelayCommand]
     private async Task PickMediaAsync()
     {
-        if (string.IsNullOrEmpty(CircleId)) return;
-
         try
         {
             var file = await MediaPicker.Default.PickPhotoAsync();
@@ -238,8 +266,6 @@ public partial class CircleChatViewModel : ObservableObject
     [RelayCommand]
     private async Task PickVideoAsync()
     {
-        if (string.IsNullOrEmpty(CircleId)) return;
-
         try
         {
             var file = await MediaPicker.Default.PickVideoAsync();
@@ -269,20 +295,31 @@ public partial class CircleChatViewModel : ObservableObject
                 var caption = !string.IsNullOrWhiteSpace(NewMessageText) ? NewMessageText.Trim() : string.Empty;
                 NewMessageText = string.Empty;
 
-                var sentMsg = await _safetyCircleService.SendMessageAsync(CircleId, caption, uploadedUrl, mediaType);
-                if (sentMsg != null)
+                RefreshCurrentUserId();
+
+                var localItem = new ChatMessageItem
                 {
-                    Messages.Add(new ChatMessageItem
+                    Id = Guid.NewGuid().ToString(),
+                    UserId = _currentUserId,
+                    SenderName = "Me",
+                    MessageText = caption,
+                    MediaUrl = uploadedUrl,
+                    MediaType = mediaType,
+                    IsMyMessage = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    Messages.Add(localItem);
+                    MessageAdded?.Invoke(localItem);
+                });
+
+                if (!string.IsNullOrEmpty(CircleId))
+                {
+                    _ = Task.Run(async () =>
                     {
-                        Id = sentMsg.Id,
-                        UserId = sentMsg.UserId,
-                        SenderName = sentMsg.SenderName,
-                        SenderAvatarUrl = sentMsg.SenderAvatarUrl,
-                        MessageText = sentMsg.MessageText,
-                        MediaUrl = sentMsg.MediaUrl,
-                        MediaType = sentMsg.MediaType,
-                        IsMyMessage = true,
-                        CreatedAt = sentMsg.CreatedAt
+                        await _safetyCircleService.SendMessageAsync(CircleId, caption, uploadedUrl, mediaType);
                     });
                 }
             }

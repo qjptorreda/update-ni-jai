@@ -39,6 +39,7 @@
 
         <!-- Messages Stream -->
         <CollectionView Grid.Row="2" 
+                        x:Name="MessagesCollectionView"
                         ItemsSource="{Binding Messages}" 
                         Margin="12,8"
                         SelectionMode="None">

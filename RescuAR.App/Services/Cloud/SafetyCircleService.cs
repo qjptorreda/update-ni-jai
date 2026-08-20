@@ -192,17 +192,18 @@ namespace RescuAR.App.Services.Cloud
         }
 
         // --- Chat Messaging ---
+        private static readonly Dictionary<string, List<SupabaseCircleMessage>> _inMemoryMessages = new();
 
         public async Task<SupabaseCircleMessage?> SendMessageAsync(string circleId, string messageText, string? mediaUrl = null, string? mediaType = "Text")
         {
+            string senderName = "Family Member";
+            string avatarUrl = string.Empty;
+            string userId = string.Empty;
+
             try
             {
                 var client = GetClient();
-                var userId = GetCurrentUserId();
-
-                // Fetch sender name and avatar
-                string senderName = "Family Member";
-                string avatarUrl = string.Empty;
+                userId = GetCurrentUserId();
 
                 try
                 {
@@ -216,27 +217,40 @@ namespace RescuAR.App.Services.Cloud
                     }
                 }
                 catch { }
+            }
+            catch { }
 
-                var msg = new SupabaseCircleMessage
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    CircleId = circleId,
-                    UserId = userId,
-                    SenderName = senderName,
-                    SenderAvatarUrl = avatarUrl,
-                    MessageText = messageText ?? string.Empty,
-                    MediaUrl = mediaUrl ?? string.Empty,
-                    MediaType = string.IsNullOrWhiteSpace(mediaUrl) ? "Text" : (mediaType ?? "Image"),
-                    CreatedAt = DateTime.UtcNow
-                };
+            var msg = new SupabaseCircleMessage
+            {
+                Id = Guid.NewGuid().ToString(),
+                CircleId = circleId,
+                UserId = userId,
+                SenderName = senderName,
+                SenderAvatarUrl = avatarUrl,
+                MessageText = messageText ?? string.Empty,
+                MediaUrl = mediaUrl ?? string.Empty,
+                MediaType = string.IsNullOrWhiteSpace(mediaUrl) ? "Text" : (mediaType ?? "Image"),
+                CreatedAt = DateTime.UtcNow
+            };
 
+            // Always store in memory cache
+            lock (_inMemoryMessages)
+            {
+                if (!_inMemoryMessages.ContainsKey(circleId))
+                    _inMemoryMessages[circleId] = new List<SupabaseCircleMessage>();
+                _inMemoryMessages[circleId].Add(msg);
+            }
+
+            try
+            {
+                var client = GetClient();
                 var insertResp = await client.From<SupabaseCircleMessage>().Insert(msg);
                 return insertResp.Models.FirstOrDefault() ?? msg;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to send message: {ex.Message}");
-                return null;
+                System.Diagnostics.Debug.WriteLine($"Supabase send message error (using local memory store): {ex.Message}");
+                return msg;
             }
         }
 
@@ -250,13 +264,26 @@ namespace RescuAR.App.Services.Cloud
                     .Order("created_at", Supabase.Postgrest.Constants.Ordering.Ascending)
                     .Get();
 
-                return resp.Models ?? new List<SupabaseCircleMessage>();
+                if (resp.Models != null && resp.Models.Count > 0)
+                {
+                    return resp.Models;
+                }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to get circle messages: {ex.Message}");
-                return new List<SupabaseCircleMessage>();
+                System.Diagnostics.Debug.WriteLine($"GetCircleMessages remote error: {ex.Message}");
             }
+
+            // Return in-memory fallback if remote table is empty or pending
+            lock (_inMemoryMessages)
+            {
+                if (_inMemoryMessages.TryGetValue(circleId, out var list))
+                {
+                    return list.OrderBy(m => m.CreatedAt).ToList();
+                }
+            }
+
+            return new List<SupabaseCircleMessage>();
         }
 
         private string GenerateInviteCode()

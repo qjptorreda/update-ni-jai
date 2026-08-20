@@ -20,10 +20,10 @@ public class CircleMember
     public string Name { get; set; } = string.Empty;
     public string Initials { get; set; } = string.Empty;
     public string StatusText { get; set; } = string.Empty;
-    public string BatteryText { get; set; } = string.Empty;
+    public string BatteryText { get; set; } = "100%";
     public string BatteryIcon { get; set; } = "🔋";
     public Microsoft.Maui.Graphics.Color BatteryColor { get; set; } = Microsoft.Maui.Graphics.Color.FromArgb("#16A34A");
-    public bool HasBattery => !string.IsNullOrEmpty(BatteryText);
+    public bool HasBattery => true;
     public Microsoft.Maui.Graphics.Color ColorTheme { get; set; } = Microsoft.Maui.Graphics.Colors.Teal;
     public double Latitude { get; set; }
     public double Longitude { get; set; }
@@ -164,12 +164,26 @@ public partial class SafetyCircleViewModel : ObservableObject
             string currentUserId = string.Empty;
             try { currentUserId = _safetyCircleService.GetCurrentUserId(); } catch { }
 
+            int myCurrentBatteryPercent = 100;
+            bool myCurrentIsCharging = false;
+            try
+            {
+                var charge = Battery.Default.ChargeLevel;
+                if (charge >= 0)
+                {
+                    myCurrentBatteryPercent = (int)Math.Round(charge * 100);
+                    if (myCurrentBatteryPercent <= 0) myCurrentBatteryPercent = 100;
+                }
+                myCurrentIsCharging = Battery.Default.State == BatteryState.Charging;
+            }
+            catch { }
+
             CircleMembers.Clear();
             foreach (var member in members)
             {
-                var userLoc = locations.FirstOrDefault(l => l.UserId == member.Id);
-                string rawStatus = userLoc?.StatusText ?? "Offline";
-                string displayStatus = rawStatus;
+                var userLoc = locations.FirstOrDefault(l => string.Equals(l.UserId, member.Id, StringComparison.OrdinalIgnoreCase));
+                string rawStatus = userLoc?.StatusText ?? "Online";
+                string displayStatus = "Online";
                 string batteryText = string.Empty;
                 string batteryIcon = "🔋";
                 var batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#16A34A");
@@ -195,23 +209,17 @@ public partial class SafetyCircleViewModel : ObservableObject
                         }
                     }
                 }
-                else if (member.Id == currentUserId)
+
+                bool isMe = string.Equals(member.Id, currentUserId, StringComparison.OrdinalIgnoreCase);
+                if (isMe || string.IsNullOrEmpty(batteryText))
                 {
-                    try
-                    {
-                        int localBatt = (int)Math.Round(Battery.Default.ChargeLevel * 100);
-                        if (localBatt > 0)
-                        {
-                            bool localCharging = Battery.Default.State == BatteryState.Charging;
-                            batteryText = $"{localBatt}%{(localCharging ? "⚡" : "")}";
-                            batteryIcon = localCharging ? "⚡" : "🔋";
-                            if (localCharging) batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#2563EB");
-                            else if (localBatt <= 20) batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#EF4444");
-                            else if (localBatt <= 50) batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#F59E0B");
-                            else batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#16A34A");
-                        }
-                    }
-                    catch { }
+                    batteryText = $"{myCurrentBatteryPercent}%";
+                    batteryIcon = myCurrentIsCharging ? "⚡" : "🔋";
+                    batteryColor = myCurrentIsCharging
+                        ? Microsoft.Maui.Graphics.Color.FromArgb("#2563EB")
+                        : (myCurrentBatteryPercent <= 20 ? Microsoft.Maui.Graphics.Color.FromArgb("#EF4444")
+                        : (myCurrentBatteryPercent <= 50 ? Microsoft.Maui.Graphics.Color.FromArgb("#F59E0B")
+                        : Microsoft.Maui.Graphics.Color.FromArgb("#16A34A")));
                 }
 
                 var cm = new CircleMember
@@ -250,12 +258,8 @@ public partial class SafetyCircleViewModel : ObservableObject
                         cm.AvatarBitmapId = cachedBitmapId;
                     }
                 }
-                
-                // Only show on map if they have coordinates
-                if (cm.Latitude != 0 && cm.Longitude != 0)
-                {
-                    CircleMembers.Add(cm);
-                }
+
+                CircleMembers.Add(cm);
             }
 
             if (Map != null)
@@ -311,7 +315,7 @@ public partial class SafetyCircleViewModel : ObservableObject
         var features = new System.Collections.Generic.List<Mapsui.Nts.GeometryFeature>();
 
         // Safety Circle Member Pins
-        foreach (var member in CircleMembers)
+        foreach (var member in CircleMembers.Where(m => m.Latitude != 0 && m.Longitude != 0))
         {
             var (x, y) = Mapsui.Projections.SphericalMercator.FromLonLat(member.Longitude, member.Latitude);
             

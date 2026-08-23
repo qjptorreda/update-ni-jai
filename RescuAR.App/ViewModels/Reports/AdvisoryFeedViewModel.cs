@@ -148,6 +148,7 @@ public partial class AdvisoryFeedViewModel : ObservableObject
     private void ClosePopup()
     {
         IsPopupVisible = false;
+        RealtimeAdvisoryManager.StopAlarmAudio();
     }
 
     [RelayCommand]

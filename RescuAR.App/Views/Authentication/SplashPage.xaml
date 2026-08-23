@@ -5,65 +5,197 @@
     xmlns:vm="clr-namespace:RescuAR.App.ViewModels.Authentication"
     x:DataType="vm:SplashViewModel"
     x:Class="RescuAR.App.Views.Authentication.SplashPage"
-    BackgroundColor="White">
+    BackgroundColor="#0A1118">
 
-    <Grid RowDefinitions="Auto, *, Auto" ColumnDefinitions="*">
-        
-        <!-- Header Bar -->
-        <Grid Grid.Row="0" Grid.Column="0" HeightRequest="60" BackgroundColor="White">
-            <Label Text="RescuAR"
-                   FontFamily="OpenSansSemibold"
-                   FontSize="18"
-                   TextColor="#1E1E1E"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Center" />
-        </Grid>
+    <Grid>
+        <!-- Background Gradient and Holographic Grid -->
+        <BoxView HorizontalOptions="Fill" VerticalOptions="Fill">
+            <BoxView.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#09141D" Offset="0.0" />
+                    <GradientStop Color="#050B10" Offset="0.5" />
+                    <GradientStop Color="#001F29" Offset="1.0" />
+                </LinearGradientBrush>
+            </BoxView.Background>
+        </BoxView>
 
-        <!-- Center Content: Logo Card -->
-        <VerticalStackLayout Grid.Row="1" 
-                             HorizontalOptions="Center" 
-                             VerticalOptions="Center"
-                             Spacing="20">
+        <!-- Ambient Glow Beacons -->
+        <Ellipse x:Name="AmbientGlow"
+                 WidthRequest="300"
+                 HeightRequest="300"
+                 Fill="#1A00E6F8"
+                 HorizontalOptions="Center"
+                 VerticalOptions="Center"
+                 Scale="1.0"
+                 Opacity="0.6" />
+
+        <!-- Main Layout Container -->
+        <Grid RowDefinitions="Auto, *, Auto" Padding="24, 40">
             
-            <Border WidthRequest="300"
-                    HeightRequest="120"
-                    StrokeThickness="0"
-                    BackgroundColor="White"
-                    StrokeShape="RoundRectangle 12">
-                <Border.Shadow>
-                    <Shadow Brush="#000000" Offset="0,4" Radius="8" Opacity="0.08" />
-                </Border.Shadow>
+            <!-- Top HUD / Brand Header -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto" VerticalOptions="Center">
+                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                    <Border StrokeShape="RoundRectangle 6" BackgroundColor="#152E3C" Stroke="#00E6F8" StrokeThickness="1" Padding="6,2">
+                        <Label Text="AR LIVE" TextColor="#00E6F8" FontSize="10" FontAttributes="Bold" CharacterSpacing="1" />
+                    </Border>
+                    <Label Text="SYSTEM ACTIVE" TextColor="#64748B" FontSize="11" FontAttributes="Bold" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+
+                <!-- Skip Button -->
+                <Border Grid.Column="2" StrokeShape="RoundRectangle 16" BackgroundColor="#1E293B" Stroke="#334155" StrokeThickness="1" Padding="12,6" VerticalOptions="Center">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnSkipTapped" />
+                    </Border.GestureRecognizers>
+                    <Label Text="Skip ➔" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold" />
+                </Border>
+            </Grid>
+
+            <!-- Center View: Programmatic AR Evacuation Guidance Animation Scene -->
+            <Grid Grid.Row="1" HorizontalOptions="Center" VerticalOptions="Center" WidthRequest="340" HeightRequest="380">
                 
-                <Image Source="rescuar_logo.jpg"
-                       Aspect="AspectFit"
-                       Margin="10"
-                       HorizontalOptions="Fill"
-                       VerticalOptions="Fill" />
-            </Border>
-            
-        </VerticalStackLayout>
+                <!-- Perspective Ground Hologram Grid -->
+                <Border StrokeShape="RoundRectangle 24" BackgroundColor="#0F172A" Stroke="#1E293B" StrokeThickness="1" Padding="20" HorizontalOptions="Fill" VerticalOptions="Fill">
+                    <Border.Shadow>
+                        <Shadow Brush="#00E6F8" Offset="0, 10" Radius="30" Opacity="0.15" />
+                    </Border.Shadow>
+                    
+                    <Grid>
+                        <!-- Holographic Path / Laser Guide Line -->
+                        <BoxView HorizontalOptions="Center" WidthRequest="4" HeightRequest="220" VerticalOptions="Center" Margin="0,20,0,0">
+                            <BoxView.Background>
+                                <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                    <GradientStop Color="#00E6F8" Offset="0.0" />
+                                    <GradientStop Color="#10B981" Offset="0.8" />
+                                    <GradientStop Color="#059669" Offset="1.0" />
+                                </LinearGradientBrush>
+                            </BoxView.Background>
+                        </BoxView>
 
-        <!-- Bottom Loading State & Version -->
-        <VerticalStackLayout Grid.Row="2"
-                             HorizontalOptions="Center"
-                             VerticalOptions="End"
-                             Margin="0,0,0,40"
-                             Spacing="12">
+                        <!-- Hologram Target Exit Portal (Destination) -->
+                        <VerticalStackLayout Spacing="6" HorizontalOptions="Center" VerticalOptions="Start" Margin="0, 10, 0, 0">
+                            <Border x:Name="ExitPortalBorder"
+                                    StrokeShape="RoundRectangle 20"
+                                    BackgroundColor="#064E3B"
+                                    Stroke="#10B981"
+                                    StrokeThickness="2"
+                                    Padding="14, 8"
+                                    HorizontalOptions="Center">
+                                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                    <Label Text="🚪" FontSize="18" VerticalOptions="Center" />
+                                    <VerticalStackLayout Spacing="0">
+                                        <Label Text="SAFE EVACUATION ZONE" TextColor="#6EE7B7" FontSize="9" FontAttributes="Bold" CharacterSpacing="1" />
+                                        <Label Text="SAFE EXIT PORTAL" TextColor="#FFFFFF" FontSize="13" FontAttributes="Bold" />
+                                    </VerticalStackLayout>
+                                </HorizontalStackLayout>
+                            </Border>
+
+                            <!-- Target Distance Pulse Pill -->
+                            <Border StrokeShape="RoundRectangle 10" BackgroundColor="#042F2E" Stroke="#14B8A6" StrokeThickness="1" Padding="8,2" HorizontalOptions="Center">
+                                <Label Text="📍 15m Ahead • CLEAR PATH" TextColor="#5EEAD4" FontSize="10" FontAttributes="Bold" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Animated Holographic Floating 3D AR Arrows -->
+                        <VerticalStackLayout Spacing="28" HorizontalOptions="Center" VerticalOptions="Center" Margin="0, 50, 0, 0">
+                            <!-- Top Arrow 1 -->
+                            <Label x:Name="Arrow1"
+                                   Text="▲"
+                                   TextColor="#10B981"
+                                   FontSize="22"
+                                   FontAttributes="Bold"
+                                   HorizontalOptions="Center"
+                                   Opacity="0.8" />
+
+                            <!-- Middle Arrow 2 -->
+                            <Label x:Name="Arrow2"
+                                   Text="▲"
+                                   TextColor="#00E6F8"
+                                   FontSize="26"
+                                   FontAttributes="Bold"
+                                   HorizontalOptions="Center"
+                                   Opacity="0.9" />
+
+                            <!-- Bottom Arrow 3 -->
+                            <Label x:Name="Arrow3"
+                                   Text="▲"
+                                   TextColor="#00D9E9"
+                                   FontSize="30"
+                                   FontAttributes="Bold"
+                                   HorizontalOptions="Center"
+                                   Opacity="1.0" />
+                        </VerticalStackLayout>
+
+                        <!-- Evacuating People Avatars Group (Walking along AR path) -->
+                        <Grid x:Name="PeopleGroup"
+                              HorizontalOptions="Center"
+                              VerticalOptions="End"
+                              Margin="0, 0, 0, 15"
+                              ColumnDefinitions="Auto, Auto, Auto"
+                              ColumnSpacing="-12">
+                            
+                            <!-- Person 1: Family Member / Child -->
+                            <Border StrokeShape="RoundRectangle 22" BackgroundColor="#3B82F6" Stroke="#60A5FA" StrokeThickness="2" WidthRequest="44" HeightRequest="44" HorizontalOptions="Center" VerticalOptions="Center">
+                                <Label Text="👧" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+
+                            <!-- Person 2: Lead Evacuee / User with RescuAR Phone -->
+                            <Border StrokeShape="RoundRectangle 26" BackgroundColor="#10B981" Stroke="#34D399" StrokeThickness="3" WidthRequest="52" HeightRequest="52" HorizontalOptions="Center" VerticalOptions="Center">
+                                <Label Text="🏃" FontSize="26" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+
+                            <!-- Person 3: Family Member -->
+                            <Border StrokeShape="RoundRectangle 22" BackgroundColor="#F59E0B" Stroke="#FBBF24" StrokeThickness="2" WidthRequest="44" HeightRequest="44" HorizontalOptions="Center" VerticalOptions="Center">
+                                <Label Text="🧑" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                        </Grid>
+
+                        <!-- HUD Floating AR Compass / Elevation Tag -->
+                        <Border HorizontalOptions="Start" VerticalOptions="End" Margin="4,0,0,10" StrokeShape="RoundRectangle 10" BackgroundColor="#0B131E" Stroke="#1E293B" StrokeThickness="1" Padding="8,4">
+                            <Label Text="🧭 BEARING: 340° N" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" />
+                        </Border>
+
+                        <Border HorizontalOptions="End" VerticalOptions="End" Margin="0,0,4,10" StrokeShape="RoundRectangle 10" BackgroundColor="#0B131E" Stroke="#1E293B" StrokeThickness="1" Padding="8,4">
+                            <Label Text="🛡️ RESCUAR AR" TextColor="#34D399" FontSize="9" FontAttributes="Bold" />
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Bottom Brand & Progress Status -->
+            <VerticalStackLayout Grid.Row="2" Spacing="14" HorizontalOptions="Center" VerticalOptions="End">
+                
+                <!-- App Title & Tagline -->
+                <VerticalStackLayout Spacing="4" HorizontalOptions="Center">
+                    <Label Text="RescuAR"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="24"
+                           FontAttributes="Bold"
+                           TextColor="#FFFFFF"
+                           HorizontalOptions="Center" />
+                    <Label Text="Augmented Reality Evacuation &amp; Disaster Resilience"
+                           FontSize="12"
+                           TextColor="#94A3B8"
+                           HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+                <!-- Modern Progress Bar -->
+                <Border StrokeShape="RoundRectangle 4" BackgroundColor="#1E293B" StrokeThickness="0" HeightRequest="6" WidthRequest="200" HorizontalOptions="Center">
+                    <BoxView x:Name="ProgressBarFill"
+                             BackgroundColor="#00E6F8"
+                             HorizontalOptions="Start"
+                             WidthRequest="20"
+                             HeightRequest="6" />
+                </Border>
+
+                <!-- Dynamic Status Text -->
+                <Label Text="{Binding StatusText}"
+                       FontSize="13"
+                       TextColor="#38BDF8"
+                       HorizontalOptions="Center" />
+            </VerticalStackLayout>
             
-            <Label Text="{Binding StatusText}"
-                   FontSize="14"
-                   FontFamily="OpenSansRegular"
-                   TextColor="#5A5A5A"
-                   HorizontalOptions="Center" />
-            
-            <Label Text="{Binding VersionText}"
-                   FontSize="12"
-                   FontFamily="OpenSansRegular"
-                   TextColor="#A0A0A0"
-                   HorizontalOptions="Center" />
-            
-        </VerticalStackLayout>
-        
+        </Grid>
     </Grid>
 
-</ContentPage>
+</ContentPage>
+

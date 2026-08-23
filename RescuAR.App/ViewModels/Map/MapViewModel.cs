@@ -143,6 +143,7 @@ public partial class MapViewModel : ObservableObject
     {
         IsPopupVisible = false;
         SelectedAdvisory = null;
+        RescuAR.App.Services.Reports.RealtimeAdvisoryManager.StopAlarmAudio();
     }
 
     [RelayCommand]

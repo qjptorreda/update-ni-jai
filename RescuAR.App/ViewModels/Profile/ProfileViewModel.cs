@@ -316,6 +316,7 @@ namespace RescuAR.App.ViewModels.Profile
         {
             IsPopupVisible = false;
             SelectedAdvisory = null;
+            RescuAR.App.Services.Reports.RealtimeAdvisoryManager.StopAlarmAudio();
         }
 
         [RelayCommand]

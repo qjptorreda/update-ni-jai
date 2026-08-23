@@ -339,6 +339,7 @@ public partial class DashboardViewModel : ObservableObject
     private void ClosePopup()
     {
         IsPopupVisible = false;
+        RealtimeAdvisoryManager.StopAlarmAudio();
     }
 
     [RelayCommand]

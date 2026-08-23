@@ -76,8 +76,33 @@ public static class RealtimeAdvisoryManager
     private static string? _lastAdvisoryId = null;
     private static readonly AdvisoryService _service = new();
     private static IDispatcherTimer? _timer;
+#if ANDROID
+    private static Android.Media.MediaPlayer? _activePlayer;
+#endif
 
     public static event Action<DisasterAdvisory>? OnNewAdvisoryPushed;
+
+    public static void StopAlarmAudio()
+    {
+#if ANDROID
+        try
+        {
+            if (_activePlayer != null)
+            {
+                if (_activePlayer.IsPlaying)
+                {
+                    _activePlayer.Stop();
+                }
+                _activePlayer.Release();
+                _activePlayer = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error stopping audio: {ex.Message}");
+        }
+#endif
+    }
 
     public static void StartRealtimeListener()
     {
@@ -95,29 +120,37 @@ public static class RealtimeAdvisoryManager
                     if (advisories != null && advisories.Count > 0)
                     {
                         var latest = advisories.FirstOrDefault();
-                        if (latest != null && latest.Id != _lastAdvisoryId)
+                        if (latest != null)
                         {
-                            bool isInitialRun = (_lastAdvisoryId == null);
-                            _lastAdvisoryId = latest.Id;
-
-                            if (!isInitialRun)
+                            if (_lastAdvisoryId == null)
                             {
-                                // Admin pushed a new advisory! Trigger SweetAlert Pop-Up Modal!
+                                // Initial startup: record the latest advisory ID so we DO NOT sound the alarm on app launch
+                                _lastAdvisoryId = latest.Id;
+                            }
+                            else if (latest.Id != _lastAdvisoryId)
+                            {
+                                // Admin pushed a brand new advisory while app is running!
+                                _lastAdvisoryId = latest.Id;
+
                                 MainThread.BeginInvokeOnMainThread(() =>
                                 {
 #if ANDROID
                                     try
                                     {
+                                        StopAlarmAudio(); // Stop any existing audio first
                                         var afd = Android.App.Application.Context.Assets?.OpenFd("ndrrmc_alarm.ogg");
                                         if (afd != null)
                                         {
-                                            var player = new Android.Media.MediaPlayer();
-                                            player.SetDataSource(afd.FileDescriptor, afd.StartOffset, afd.Length);
-                                            player.Prepare();
-                                            player.Start();
+                                            _activePlayer = new Android.Media.MediaPlayer();
+                                            _activePlayer.SetDataSource(afd.FileDescriptor, afd.StartOffset, afd.Length);
+                                            _activePlayer.Prepare();
+                                            _activePlayer.Start();
                                             
                                             // Release player after it finishes
-                                            player.Completion += (s, e) => { player.Release(); };
+                                            _activePlayer.Completion += (s, e) => 
+                                            { 
+                                                try { _activePlayer?.Release(); _activePlayer = null; } catch { }
+                                            };
                                         }
                                     }
                                     catch (Exception ex)

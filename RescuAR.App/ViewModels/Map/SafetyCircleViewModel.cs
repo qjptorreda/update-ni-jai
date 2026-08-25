@@ -274,7 +274,13 @@ public partial class SafetyCircleViewModel : ObservableObject
         }
 
         // 5. Draw Name Pill Tag at the bottom
-        string displayName = isMe ? "Me now" : (name.Split(' ')[0]);
+        string rawFirstName = (name ?? string.Empty).Replace("(You)", "").Trim().Split(' ')[0].Trim();
+        if (string.IsNullOrWhiteSpace(rawFirstName) || rawFirstName.Equals("Member", StringComparison.OrdinalIgnoreCase))
+        {
+            rawFirstName = isMe ? "You" : name;
+        }
+
+        string displayName = isMe ? $"{rawFirstName} (You)" : rawFirstName;
         float pillY = circleCenterY + circleRadius + 22;
         float pillHeight = 26;
         
@@ -319,10 +325,25 @@ public partial class SafetyCircleViewModel : ObservableObject
             var (myBatteryPercent, myIsCharging) = GetRealtimeBatteryLevel();
             string myBatteryStatus = $"{myBatteryPercent}%{(myIsCharging ? "⚡" : "")}";
 
+            Microsoft.Maui.Devices.Sensors.Location? loc = null;
             var hasPermission = await CheckAndRequestLocationPermission();
             if (hasPermission)
             {
-                var loc = await Geolocation.Default.GetLocationAsync(new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(3)));
+                try
+                {
+                    loc = await Geolocation.Default.GetLocationAsync(new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(4)));
+                }
+                catch { }
+
+                if (loc == null)
+                {
+                    try
+                    {
+                        loc = await Geolocation.Default.GetLastKnownLocationAsync();
+                    }
+                    catch { }
+                }
+
                 if (loc != null)
                 {
                     string pushStatus = $"Online|{myBatteryStatus}";
@@ -340,7 +361,7 @@ public partial class SafetyCircleViewModel : ObservableObject
 
             if (string.IsNullOrEmpty(_currentCircleId)) return;
 
-            // 2. Pull other members
+            // 2. Pull circle members & cloud locations
             var members = await _safetyCircleService.GetCircleMembersAsync(_currentCircleId);
             var locations = await _safetyCircleService.GetCircleLocationsAsync(_currentCircleId);
             string currentUserId = string.Empty;
@@ -349,6 +370,8 @@ public partial class SafetyCircleViewModel : ObservableObject
             CircleMembers.Clear();
             foreach (var member in members)
             {
+                bool isMe = string.Equals(member.Id, currentUserId, StringComparison.OrdinalIgnoreCase);
+
                 var userLoc = locations.FirstOrDefault(l => string.Equals(l.UserId, member.Id, StringComparison.OrdinalIgnoreCase));
                 string rawStatus = userLoc?.StatusText ?? "Online";
                 string displayStatus = "Online";
@@ -378,8 +401,7 @@ public partial class SafetyCircleViewModel : ObservableObject
                     }
                 }
 
-                bool isMe = string.Equals(member.Id, currentUserId, StringComparison.OrdinalIgnoreCase);
-                if (isMe || string.IsNullOrEmpty(batteryText))
+                if (isMe)
                 {
                     batteryText = $"{myBatteryPercent}%";
                     batteryIcon = myIsCharging ? "⚡" : "🔋";
@@ -389,17 +411,73 @@ public partial class SafetyCircleViewModel : ObservableObject
                         : (myBatteryPercent <= 50 ? Microsoft.Maui.Graphics.Color.FromArgb("#F59E0B")
                         : Microsoft.Maui.Graphics.Color.FromArgb("#16A34A")));
                 }
+                else if (string.IsNullOrEmpty(batteryText))
+                {
+                    batteryText = "100%";
+                    batteryIcon = "🔋";
+                    batteryColor = Microsoft.Maui.Graphics.Color.FromArgb("#16A34A");
+                }
+
+                double memberLat = userLoc?.Latitude ?? 0;
+                double memberLon = userLoc?.Longitude ?? 0;
+
+                // Fallback for current user's local GPS location so your pin always appears immediately
+                if (isMe && (memberLat == 0 && memberLon == 0) && loc != null)
+                {
+                    memberLat = loc.Latitude;
+                    memberLon = loc.Longitude;
+                }
+
+                string memberName = $"{member.FirstName} {member.LastName}".Trim();
+                if (string.IsNullOrWhiteSpace(memberName) || memberName.Equals("Member", StringComparison.OrdinalIgnoreCase) || memberName.Equals("Family Member", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (isMe)
+                    {
+                        var currentUser = RescuAR.Services.SupabaseService.Instance.Client?.Auth.CurrentUser;
+                        if (currentUser?.UserMetadata != null)
+                        {
+                            string fName = currentUser.UserMetadata.TryGetValue("first_name", out var fn) && fn != null ? fn.ToString()?.Trim() ?? "" : "";
+                            string lName = currentUser.UserMetadata.TryGetValue("last_name", out var ln) && ln != null ? ln.ToString()?.Trim() ?? "" : "";
+                            memberName = $"{fName} {lName}".Trim();
+                        }
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(memberName))
+                {
+                    memberName = isMe ? "You" : "Family Member";
+                }
+
+                string displayListName = isMe ? (memberName.EndsWith("(You)") ? memberName : $"{memberName} (You)") : memberName;
+
+                string initials = (member.FirstName?.Length > 0 ? member.FirstName.Substring(0, 1) : "") + (member.LastName?.Length > 0 ? member.LastName.Substring(0, 1) : "");
+                if (string.IsNullOrWhiteSpace(initials) || initials.Length < 2)
+                {
+                    var nameWords = memberName.Replace("(You)", "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (nameWords.Length >= 2)
+                    {
+                        initials = $"{nameWords[0][0]}{nameWords[1][0]}".ToUpper();
+                    }
+                    else if (nameWords.Length == 1 && nameWords[0].Length >= 2)
+                    {
+                        initials = nameWords[0].Substring(0, 2).ToUpper();
+                    }
+                    else
+                    {
+                        initials = isMe ? "ME" : "FM";
+                    }
+                }
 
                 var cm = new CircleMember
                 {
-                    Name = $"{member.FirstName} {member.LastName}".Trim(),
-                    Initials = (member.FirstName?.Length > 0 ? member.FirstName.Substring(0, 1) : "") + (member.LastName?.Length > 0 ? member.LastName.Substring(0, 1) : ""),
+                    Name = displayListName,
+                    Initials = initials,
                     StatusText = displayStatus,
                     BatteryText = batteryText,
                     BatteryIcon = batteryIcon,
                     BatteryColor = batteryColor,
-                    Latitude = userLoc?.Latitude ?? 0,
-                    Longitude = userLoc?.Longitude ?? 0,
+                    Latitude = memberLat,
+                    Longitude = memberLon,
                     ColorTheme = GetColorForUser(member.Id),
                     AvatarUrl = member.AvatarUrl
                 };
@@ -575,6 +653,7 @@ public partial class SafetyCircleViewModel : ObservableObject
                 var circle = await _safetyCircleService.CreateCircleAsync(result);
                 await Shell.Current.DisplayAlert("Circle Created!", $"Your invite code is: {circle.InviteCode}\nShare this with your family/friends.", "OK");
                 await LoadMyCirclesAsync();
+                SelectCircle(circle);
             }
             catch (Exception ex)
             {
@@ -595,6 +674,7 @@ public partial class SafetyCircleViewModel : ObservableObject
                 var circle = await _safetyCircleService.JoinCircleWithCodeAsync(result);
                 await Shell.Current.DisplayAlert("Success", $"You've joined {circle.Name}!", "OK");
                 await LoadMyCirclesAsync();
+                SelectCircle(circle);
             }
             catch (Exception ex)
             {

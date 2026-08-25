@@ -59,7 +59,16 @@ namespace RescuAR.App.ViewModels.Authentication
                     if (Application.Current != null)
                     {
                         Preferences.Default.Set("IsLoggedIn", true);
-                        Application.Current.MainPage = new AppShell();
+                        bool hasPermissions = Preferences.Default.Get("HasCompletedPermissions", false);
+                        if (hasPermissions)
+                        {
+                            Application.Current.MainPage = new AppShell();
+                        }
+                        else
+                        {
+                            var permissionsPage = _serviceProvider.GetRequiredService<PermissionsPage>();
+                            Application.Current.MainPage = permissionsPage;
+                        }
                     }
                 });
             }
@@ -88,13 +97,22 @@ namespace RescuAR.App.ViewModels.Authentication
                 // Trigger the actual Supabase OAuth Google authentication flow (with browser + 2FA)
                 await _authService.SignInWithGoogleAsync();
 
-                // Navigate to Dashboard upon success
+                // Navigate to Permissions or Dashboard upon success
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
                     if (Application.Current != null)
                     {
                         Preferences.Default.Set("IsLoggedIn", true);
-                        Application.Current.MainPage = new AppShell();
+                        bool hasPermissions = Preferences.Default.Get("HasCompletedPermissions", false);
+                        if (hasPermissions)
+                        {
+                            Application.Current.MainPage = new AppShell();
+                        }
+                        else
+                        {
+                            var permissionsPage = _serviceProvider.GetRequiredService<PermissionsPage>();
+                            Application.Current.MainPage = permissionsPage;
+                        }
                     }
                 });
             }

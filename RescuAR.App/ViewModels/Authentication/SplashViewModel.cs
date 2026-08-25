@@ -12,13 +12,12 @@ namespace RescuAR.App.ViewModels.Authentication
     public partial class SplashViewModel : ObservableObject
     {
         private readonly IServiceProvider _serviceProvider;
-        private bool _hasNavigated = false;
 
         [ObservableProperty]
-        private string _statusText = "Calibrating AR Evacuation System...";
+        private string _statusText = "Loading safety resources...";
 
         [ObservableProperty]
-        private string _versionText = "v1.0.0 • RescuAR";
+        private string _versionText = "v0.0.1a";
 
         public SplashViewModel(IServiceProvider serviceProvider)
         {
@@ -27,29 +26,7 @@ namespace RescuAR.App.ViewModels.Authentication
 
         public async Task InitializeAsync()
         {
-            StatusText = "Scanning Safe Routes...";
-            await Task.Delay(1000);
-
-            if (_hasNavigated) return;
-            StatusText = "AR Evacuation Guidance Active...";
-            await Task.Delay(1000);
-
-            if (_hasNavigated) return;
-            StatusText = "Ready • Entering RescuAR...";
-            await Task.Delay(1000);
-
-            NavigateToNextPage();
-        }
-
-        public void SkipToNextPage()
-        {
-            NavigateToNextPage();
-        }
-
-        private void NavigateToNextPage()
-        {
-            if (_hasNavigated) return;
-            _hasNavigated = true;
+            await Task.Delay(2000);
 
             bool isLoggedIn = Preferences.Default.Get("IsLoggedIn", false);
             bool hasSignedUp = Preferences.Default.Get("HasSignedUp", false);
@@ -60,7 +37,16 @@ namespace RescuAR.App.ViewModels.Authentication
                 {
                     if (isLoggedIn)
                     {
-                        Application.Current.MainPage = new AppShell();
+                        bool hasPermissions = Preferences.Default.Get("HasCompletedPermissions", false);
+                        if (hasPermissions)
+                        {
+                            Application.Current.MainPage = new AppShell();
+                        }
+                        else
+                        {
+                            var permissionsPage = _serviceProvider.GetRequiredService<PermissionsPage>();
+                            Application.Current.MainPage = permissionsPage;
+                        }
                     }
                     else if (hasSignedUp)
                     {
@@ -77,5 +63,6 @@ namespace RescuAR.App.ViewModels.Authentication
         }
     }
 }
+
 
 

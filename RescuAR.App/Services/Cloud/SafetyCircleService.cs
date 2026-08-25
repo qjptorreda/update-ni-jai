@@ -62,15 +62,17 @@ namespace RescuAR.App.Services.Cloud
             var client = GetClient();
             var userId = GetCurrentUserId();
 
+            string cleanCode = (inviteCode ?? string.Empty).Trim().ToUpper();
+
             // Find circle by code
             var circleResponse = await client.From<SupabaseSafetyCircle>()
-                .Where(x => x.InviteCode == inviteCode.ToUpper())
+                .Where(x => x.InviteCode == cleanCode)
                 .Get();
 
             var circle = circleResponse.Models.FirstOrDefault();
             if (circle == null)
             {
-                throw new Exception("Invalid invite code.");
+                throw new Exception("Invalid invite code. Please check the code and try again.");
             }
 
             await JoinCircleInternalAsync(circle.Id, userId);
@@ -83,7 +85,8 @@ namespace RescuAR.App.Services.Cloud
 
             // Check if already a member
             var existing = await client.From<SupabaseCircleMember>()
-                .Where(x => x.CircleId == circleId && x.UserId == userId)
+                .Where(x => x.CircleId == circleId)
+                .Where(x => x.UserId == userId)
                 .Get();
 
             if (existing.Models.Any()) return; // Already joined
@@ -133,15 +136,124 @@ namespace RescuAR.App.Services.Cloud
                 .Where(x => x.CircleId == circleId)
                 .Get();
 
-            var userIds = membershipsResponse.Models.Select(m => m.UserId).ToList();
+            var userIds = membershipsResponse.Models.Select(m => m.UserId).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
             if (!userIds.Any()) return new List<User>();
 
-            // Fetch full users containing AvatarUrl
-            var usersResponse = await client.From<User>()
-                .Filter("id", Supabase.Postgrest.Constants.Operator.In, userIds)
-                .Get();
+            var usersList = new List<User>();
 
-            return usersResponse.Models;
+            try
+            {
+                // Fetch from users table
+                var usersResponse = await client.From<User>()
+                    .Filter("id", Supabase.Postgrest.Constants.Operator.In, userIds)
+                    .Get();
+
+                if (usersResponse.Models != null)
+                {
+                    foreach (var u in usersResponse.Models)
+                    {
+                        if (!string.IsNullOrWhiteSpace(u.FirstName) || !string.IsNullOrWhiteSpace(u.LastName))
+                        {
+                            usersList.Add(u);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to fetch users from database: {ex.Message}");
+            }
+
+            // Try profiles table for any members missing from users table
+            var missingIds = userIds.Where(uid => !usersList.Any(u => string.Equals(u.Id, uid, StringComparison.OrdinalIgnoreCase))).ToList();
+            if (missingIds.Any())
+            {
+                try
+                {
+                    var profilesResponse = await client.From<SupabaseProfile>()
+                        .Filter("id", Supabase.Postgrest.Constants.Operator.In, missingIds)
+                        .Get();
+
+                    if (profilesResponse.Models != null)
+                    {
+                        foreach (var p in profilesResponse.Models)
+                        {
+                            if (!string.IsNullOrWhiteSpace(p.FirstName) || !string.IsNullOrWhiteSpace(p.LastName))
+                            {
+                                usersList.Add(new User
+                                {
+                                    Id = p.Id,
+                                    FirstName = p.FirstName,
+                                    LastName = p.LastName
+                                });
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            // Ensure every member has a real name representation
+            foreach (var uid in userIds)
+            {
+                var existingUser = usersList.FirstOrDefault(u => string.Equals(u.Id, uid, StringComparison.OrdinalIgnoreCase));
+                if (existingUser == null)
+                {
+                    string fn = string.Empty;
+                    string ln = string.Empty;
+
+                    // If this is the currently authenticated user, pull directly from active Auth session metadata
+                    if (client.Auth.CurrentUser != null && string.Equals(client.Auth.CurrentUser.Id, uid, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (client.Auth.CurrentUser.UserMetadata != null)
+                        {
+                            if (client.Auth.CurrentUser.UserMetadata.TryGetValue("first_name", out var f) && f != null)
+                                fn = f.ToString()?.Trim() ?? string.Empty;
+                            if (client.Auth.CurrentUser.UserMetadata.TryGetValue("last_name", out var l) && l != null)
+                                ln = l.ToString()?.Trim() ?? string.Empty;
+                            if (string.IsNullOrWhiteSpace(fn) && client.Auth.CurrentUser.UserMetadata.TryGetValue("full_name", out var full) && full != null)
+                            {
+                                var parts = full.ToString()?.Trim().Split(' ');
+                                if (parts?.Length > 0) fn = parts[0];
+                                if (parts?.Length > 1) ln = string.Join(" ", parts.Skip(1));
+                            }
+                        }
+
+                        if (string.IsNullOrWhiteSpace(fn) && !string.IsNullOrWhiteSpace(client.Auth.CurrentUser.Email))
+                        {
+                            var emailPrefix = client.Auth.CurrentUser.Email.Split('@')[0];
+                            fn = char.ToUpper(emailPrefix[0]) + (emailPrefix.Length > 1 ? emailPrefix.Substring(1) : "");
+                        }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(fn))
+                    {
+                        fn = "Family";
+                        ln = "Member";
+                    }
+
+                    usersList.Add(new User
+                    {
+                        Id = uid,
+                        FirstName = fn,
+                        LastName = ln
+                    });
+                }
+                else if (string.IsNullOrWhiteSpace(existingUser.FirstName))
+                {
+                    if (!string.IsNullOrWhiteSpace(existingUser.Username))
+                    {
+                        existingUser.FirstName = existingUser.Username;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(existingUser.Email))
+                    {
+                        var emailPrefix = existingUser.Email.Split('@')[0];
+                        existingUser.FirstName = char.ToUpper(emailPrefix[0]) + (emailPrefix.Length > 1 ? emailPrefix.Substring(1) : "");
+                    }
+                }
+            }
+
+            return usersList;
         }
 
         // --- Location Tracking ---
@@ -162,7 +274,27 @@ namespace RescuAR.App.Services.Cloud
                     LastUpdated = DateTime.UtcNow
                 };
 
-                await client.From<SupabaseUserLocation>().Upsert(location);
+                try
+                {
+                    await client.From<SupabaseUserLocation>().Upsert(location);
+                }
+                catch
+                {
+                    try
+                    {
+                        await client.From<SupabaseUserLocation>()
+                            .Where(x => x.UserId == userId)
+                            .Set(x => x.Latitude, lat)
+                            .Set(x => x.Longitude, lon)
+                            .Set(x => x.StatusText, status)
+                            .Set(x => x.LastUpdated, DateTime.UtcNow)
+                            .Update();
+                    }
+                    catch
+                    {
+                        await client.From<SupabaseUserLocation>().Insert(location);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -180,7 +312,7 @@ namespace RescuAR.App.Services.Cloud
                 .Where(x => x.CircleId == circleId)
                 .Get();
 
-            var userIds = membershipsResponse.Models.Select(m => m.UserId).ToList();
+            var userIds = membershipsResponse.Models.Select(m => m.UserId).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
             if (!userIds.Any()) return new List<SupabaseUserLocation>();
 
             // Fetch latest locations
@@ -188,7 +320,7 @@ namespace RescuAR.App.Services.Cloud
                 .Filter("user_id", Supabase.Postgrest.Constants.Operator.In, userIds)
                 .Get();
 
-            return locationsResponse.Models;
+            return locationsResponse.Models ?? new List<SupabaseUserLocation>();
         }
 
         // --- Chat Messaging with Permanent Local & Cloud Persistence ---

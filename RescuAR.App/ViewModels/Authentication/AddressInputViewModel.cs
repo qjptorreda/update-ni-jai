@@ -4,13 +4,17 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.ApplicationModel;
+using RescuAR.App.Views.Authentication;
 
 namespace RescuAR.App.ViewModels.Authentication
 {
     public partial class AddressInputViewModel : ObservableObject
     {
+        private readonly IServiceProvider _serviceProvider;
+
         [ObservableProperty]
         private string _houseLotBlock = string.Empty;
 
@@ -41,6 +45,11 @@ namespace RescuAR.App.ViewModels.Authentication
         private bool _isConfirmPopupVisible = false;
 
         public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
+
+        public AddressInputViewModel(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+        }
 
         partial void OnIsLoadingChanged(bool value)
         {
@@ -168,7 +177,7 @@ namespace RescuAR.App.ViewModels.Authentication
                     dbUser.Address = fullAddress;
                     await client.From<Models.User>().Upsert(dbUser);
 
-                    // Navigate to Dashboard
+                    // Navigate to Permissions or Dashboard
                     MainThread.BeginInvokeOnMainThread(() =>
                     {
                         if (Application.Current != null)
@@ -176,16 +185,26 @@ namespace RescuAR.App.ViewModels.Authentication
                             Preferences.Default.Set("HasSignedUp", true);
                             Preferences.Default.Set("IsLoggedIn", true);
                             
+                            bool hasPermissions = Preferences.Default.Get("HasCompletedPermissions", false);
+                            Page targetPage;
+                            if (hasPermissions)
+                            {
+                                targetPage = new AppShell();
+                            }
+                            else
+                            {
+                                targetPage = _serviceProvider.GetRequiredService<PermissionsPage>();
+                            }
+
                             // Use Windows[0].Page for .NET 8+ MAUI root navigation
-                            var shell = new AppShell();
                             if (Application.Current.Windows.Count > 0)
                             {
-                                Application.Current.Windows[0].Page = shell;
+                                Application.Current.Windows[0].Page = targetPage;
                             }
                             else
                             {
 #pragma warning disable CS0618
-                                Application.Current.MainPage = shell;
+                                Application.Current.MainPage = targetPage;
 #pragma warning restore CS0618
                             }
                         }

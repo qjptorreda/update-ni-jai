@@ -97,12 +97,54 @@ namespace RescuAR.App.ViewModels.Authentication
                 Preferences.Default.Set("IsLoggedIn", true);
                 Preferences.Default.Set("UserEmail", Email.Trim());
 
-                // Navigate to Dashboard
+                // Ensure user profile row exists in users table with first_name and last_name
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var client = RescuAR.Services.SupabaseService.Instance.Client;
+                        if (client?.Auth.CurrentUser != null)
+                        {
+                            var authUser = client.Auth.CurrentUser;
+                            string fn = "";
+                            string ln = "";
+                            if (authUser.UserMetadata != null)
+                            {
+                                if (authUser.UserMetadata.TryGetValue("first_name", out var f) && f != null) fn = f.ToString()?.Trim() ?? "";
+                                if (authUser.UserMetadata.TryGetValue("last_name", out var l) && l != null) ln = l.ToString()?.Trim() ?? "";
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(fn) || !string.IsNullOrWhiteSpace(ln))
+                            {
+                                var userRecord = new Models.User
+                                {
+                                    Id = authUser.Id,
+                                    Email = authUser.Email ?? Email.Trim(),
+                                    FirstName = fn,
+                                    LastName = ln
+                                };
+                                await client.From<Models.User>().Upsert(userRecord);
+                            }
+                        }
+                    }
+                    catch { }
+                });
+
+                // Navigate to Permissions or Dashboard
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
                     if (Application.Current != null)
                     {
-                        Application.Current.MainPage = new AppShell();
+                        bool hasPermissions = Preferences.Default.Get("HasCompletedPermissions", false);
+                        if (hasPermissions)
+                        {
+                            Application.Current.MainPage = new AppShell();
+                        }
+                        else
+                        {
+                            var permissionsPage = _serviceProvider.GetRequiredService<PermissionsPage>();
+                            Application.Current.MainPage = permissionsPage;
+                        }
                     }
                 });
             }

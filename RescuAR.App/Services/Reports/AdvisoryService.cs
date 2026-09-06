@@ -82,6 +82,32 @@ public static class RealtimeAdvisoryManager
 
     public static event Action<DisasterAdvisory>? OnNewAdvisoryPushed;
 
+    public static void PlayAlarmAudio()
+    {
+#if ANDROID
+        try
+        {
+            StopAlarmAudio();
+            var afd = Android.App.Application.Context.Assets?.OpenFd("ndrrmc_alarm.ogg");
+            if (afd != null)
+            {
+                _activePlayer = new Android.Media.MediaPlayer();
+                _activePlayer.SetDataSource(afd.FileDescriptor, afd.StartOffset, afd.Length);
+                _activePlayer.Prepare();
+                _activePlayer.Start();
+                _activePlayer.Completion += (s, e) =>
+                {
+                    try { _activePlayer?.Release(); _activePlayer = null; } catch { }
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Audio play error: {ex.Message}");
+        }
+#endif
+    }
+
     public static void StopAlarmAudio()
     {
 #if ANDROID

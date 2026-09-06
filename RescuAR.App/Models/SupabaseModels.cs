@@ -101,4 +101,32 @@ namespace RescuAR.App.Models
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
+
+    [Table("emergency_hotlines")]
+    public class SupabaseEmergencyHotline : BaseModel
+    {
+        [PrimaryKey("id", false)]
+        public string Id { get; set; } = string.Empty;
+
+        [Column("agency")]
+        public string Agency { get; set; } = string.Empty;
+
+        [Column("primary_number")]
+        public string PrimaryNumber { get; set; } = string.Empty;
+
+        [Column("category")]
+        public string Category { get; set; } = string.Empty;
+
+        [Column("availability")]
+        public string Availability { get; set; } = "24/7";
+
+        [Column("alternative_number")]
+        public string AlternativeNumber { get; set; } = string.Empty;
+
+        [Column("email")]
+        public string Email { get; set; } = string.Empty;
+
+        [Column("coverage")]
+        public string Coverage { get; set; } = "Citywide";
+    }
 }

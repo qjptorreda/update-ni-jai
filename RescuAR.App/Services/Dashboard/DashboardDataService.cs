@@ -91,7 +91,15 @@ public class DashboardDataService : IDashboardDataService
 
     public Task<PreparednessData> GetPreparednessDataAsync()
     {
-        return Task.FromResult(new PreparednessData());
+        int score = Microsoft.Maui.Storage.Preferences.Default.Get("PASS_ChecklistScore", Microsoft.Maui.Storage.Preferences.Default.Get("PASS_Score", 60));
+        int completed = Microsoft.Maui.Storage.Preferences.Default.Get("PASS_ChecklistCompleted", 6);
+        int total = Microsoft.Maui.Storage.Preferences.Default.Get("PASS_ChecklistTotal", 10);
+        return Task.FromResult(new PreparednessData
+        {
+            PercentReady = score,
+            PreparedItems = completed,
+            TotalItems = total
+        });
     }
 
     public Task<EvacuationData> GetEvacuationDataAsync()
@@ -99,16 +107,34 @@ public class DashboardDataService : IDashboardDataService
         return Task.FromResult(new EvacuationData());
     }
 
-    public Task<SafetyCircleOverviewData> GetSafetyCircleDataAsync()
+    public async Task<SafetyCircleOverviewData> GetSafetyCircleDataAsync()
     {
-        return Task.FromResult(new SafetyCircleOverviewData
+        var overview = new SafetyCircleOverviewData();
+        try
         {
-            Groups = new List<SafetyCircleGroupItem>
+            var service = new RescuAR.App.Services.Cloud.SafetyCircleService();
+            var circles = await service.GetMyCirclesAsync();
+            if (circles != null && circles.Count > 0)
             {
-                new SafetyCircleGroupItem { Name = "Second Fam Circle", StatusText = "1 member status unknown", IsAlert = true },
-                new SafetyCircleGroupItem { Name = "Friends Circle", StatusText = "All members are safe", IsAlert = false }
+                foreach (var circle in circles)
+                {
+                    var members = await service.GetCircleMembersAsync(circle.Id);
+                    int count = members?.Count ?? 0;
+                    overview.Groups.Add(new SafetyCircleGroupItem
+                    {
+                        Name = circle.Name,
+                        StatusText = $"{count} member{(count == 1 ? "" : "s")} connected",
+                        IsAlert = false
+                    });
+                }
             }
-        });
+        }
+        catch (System.Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"GetSafetyCircleDataAsync error: {ex.Message}");
+        }
+
+        return overview;
     }
 
     public Task<CommunityReportsOverviewData> GetCommunityReportsDataAsync()
@@ -125,6 +151,10 @@ public class DashboardDataService : IDashboardDataService
 
     public Task<PASSData> GetPASSDataAsync()
     {
-        return Task.FromResult(new PASSData());
+        int score = Microsoft.Maui.Storage.Preferences.Default.Get("PASS_Score", 72);
+        return Task.FromResult(new PASSData
+        {
+            ScorePercentage = score
+        });
     }
 }

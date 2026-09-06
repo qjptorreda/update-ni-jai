@@ -138,6 +138,8 @@ public partial class ChecklistViewModel : ObservableObject
             PreparedCountText = $"{completedCount} of {totalCount} emergency kit items ready";
 
             Preferences.Set("PASS_ChecklistScore", PercentReady);
+            Preferences.Set("PASS_ChecklistCompleted", completedCount);
+            Preferences.Set("PASS_ChecklistTotal", totalCount);
         }
     }
 

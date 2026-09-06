@@ -116,6 +116,9 @@ namespace RescuAR.App.ViewModels.Authentication
 
                             if (!string.IsNullOrWhiteSpace(fn) || !string.IsNullOrWhiteSpace(ln))
                             {
+                                Preferences.Default.Set("UserFirstName", fn);
+                                Preferences.Default.Set("UserLastName", ln);
+
                                 var userRecord = new Models.User
                                 {
                                     Id = authUser.Id,

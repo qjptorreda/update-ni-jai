@@ -22,7 +22,7 @@ public partial class AreaStatusOverviewViewModel : ObservableObject
     public partial string RiskTitle { get; set; } = "Critical Flood Risk";
 
     [ObservableProperty]
-    public partial string AdvisoriesText { get; set; } = "1 active advisory within 0.5 km. Evacuation guidance available.";
+    public partial string AdvisoriesText { get; set; } = "1 Active Advisory within 0.5 km. Evacuation guidance available.";
 
     [ObservableProperty]
     public partial string NearestCenterName { get; set; } = "Marikina City Hall";
@@ -114,7 +114,8 @@ public partial class AreaStatusOverviewViewModel : ObservableObject
                 if (top != null)
                 {
                     int totalCount = advisories.Count;
-                    AdvisoriesText = $"{totalCount} active advisory{(totalCount > 1 ? "ies" : "")} for {top.DisplayAffectedArea}. Evacuation guidance available.";
+                    string advisoryWord = totalCount == 1 ? "Active Advisory" : "Active Advisories";
+                    AdvisoriesText = $"{totalCount} {advisoryWord} for {top.DisplayAffectedArea}. Evacuation guidance available.";
                     
                     if (top.HasActionPlan)
                     {
@@ -156,7 +157,8 @@ public partial class AreaStatusOverviewViewModel : ObservableObject
                 // Fallback to local status
                 var areaStatus = _statusService.GetCurrentAreaStatus();
                 RiskTitle = $"{areaStatus.RiskLevel} Flood Risk";
-                AdvisoriesText = $"{areaStatus.ActiveAdvisoriesCount} active advisories within 0.5 km.";
+                string fallbackWord = areaStatus.ActiveAdvisoriesCount == 1 ? "Active Advisory" : "Active Advisories";
+                AdvisoriesText = $"{areaStatus.ActiveAdvisoriesCount} {fallbackWord} within 0.5 km.";
                 RecommendedAction = areaStatus.RecommendedAction;
                 UpdatedText = "Just now";
                 UpdateThemeColors(areaStatus.RiskLevel);
@@ -184,7 +186,7 @@ public partial class AreaStatusOverviewViewModel : ObservableObject
         catch (Exception)
         {
             RiskTitle = "Critical Flood Risk";
-            AdvisoriesText = "1 active advisory within 0.5 km. Evacuation guidance available.";
+            AdvisoriesText = "1 Active Advisory within 0.5 km. Evacuation guidance available.";
             RecommendedAction = "Evacuate immediately to safe shelter";
             UpdatedText = "Just now";
             UpdateThemeColors(FloodRiskLevel.Critical);

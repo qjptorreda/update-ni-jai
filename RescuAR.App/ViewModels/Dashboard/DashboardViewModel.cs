@@ -243,6 +243,7 @@ public partial class DashboardViewModel : ObservableObject
                 FloodAdvisoryDetailText = newAdvisory.DisplayMessageText;
             }
         };
+        RealtimeAdvisoryManager.StartRealtimeListener();
     }
 
     public async void RefreshDashboard()

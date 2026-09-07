@@ -164,5 +164,6 @@ public partial class MapViewModel : ObservableObject
             SelectedAdvisory = newAdvisory;
             IsPopupVisible = true;
         };
+        RescuAR.App.Services.Reports.RealtimeAdvisoryManager.StartRealtimeListener();
     }
 }

@@ -97,8 +97,8 @@ public class DisasterAdvisory : BaseModel, INotifyPropertyChanged
     {
         get
         {
-            if (!string.IsNullOrWhiteSpace(Message)) return Message.Trim();
-            if (!string.IsNullOrWhiteSpace(Description)) return Description.Trim();
+            if (!string.IsNullOrWhiteSpace(Message)) return Message;
+            if (!string.IsNullOrWhiteSpace(Description)) return Description;
             return "No additional description provided.";
         }
     }
@@ -108,20 +108,9 @@ public class DisasterAdvisory : BaseModel, INotifyPropertyChanged
     {
         get
         {
-            if (!string.IsNullOrWhiteSpace(RecommendedAction)) return RecommendedAction.Trim();
-            if (!string.IsNullOrWhiteSpace(ActionPlan)) return ActionPlan.Trim();
-
-            // Dynamic severity-based guidelines when admin leaves action blank
-            return DisplayAlertLevel.ToLower() switch
-            {
-                "critical" or "level 3" or "evacuate" or "high" or "high severity" => 
-                    "• Mandatory evacuation in effect! Pack essential medicine and PASS Go-Bag.\n• Move immediately to designated high-ground evacuation hubs.\n• Turn off main electrical switches and gas valves before leaving.",
-                "warning" or "level 2" or "alarm" or "medium" or "moderate" => 
-                    "• Prepare for potential evacuation. Charge mobile phones & power banks.\n• Secure important documents in waterproof bags.\n• Keep emergency hotlines ready and monitor Marikina River gauge updates.",
-                "standby" or "level 1" or "alert" or "low" => 
-                    "• Monitor LGU emergency announcements and river level gauges.\n• Verify household emergency supplies and review family meeting points.",
-                _ => "• Stay alert, follow official LGU safety protocols, and check local advisories."
-            };
+            if (!string.IsNullOrWhiteSpace(ActionPlan)) return ActionPlan;
+            if (!string.IsNullOrWhiteSpace(RecommendedAction)) return RecommendedAction;
+            return string.Empty;
         }
     }
 
@@ -130,10 +119,9 @@ public class DisasterAdvisory : BaseModel, INotifyPropertyChanged
     {
         get
         {
-            if (!string.IsNullOrWhiteSpace(AffectedAreas)) return AffectedAreas.Trim();
-            if (!string.IsNullOrWhiteSpace(AffectedArea)) return AffectedArea.Trim();
-
-            return "Malanday Elementary School Evacuation Hub & Concepcion Uno Covered Court";
+            if (!string.IsNullOrWhiteSpace(AffectedAreas)) return AffectedAreas;
+            if (!string.IsNullOrWhiteSpace(AffectedArea)) return AffectedArea;
+            return "Marikina City";
         }
     }
 
@@ -156,10 +144,10 @@ public class DisasterAdvisory : BaseModel, INotifyPropertyChanged
     public string HeaderTagText => IsTagalog ? "BAGONG ADVISORY SA SAKUNA" : "NEW EMERGENCY ADVISORY";
 
     [JsonIgnore]
-    public string ActionPlanHeaderTagText => IsTagalog ? "MGA REKOMENDADONG HAKBANGIN" : "SEVERITY RECOMMENDATIONS & ACTION PLAN";
+    public string ActionPlanHeaderTagText => IsTagalog ? "MGA REKOMENDADONG HAKBANGIN" : "RECOMMENDED ACTION PLAN";
 
     [JsonIgnore]
-    public string AffectedAreaHeaderTagText => IsTagalog ? "PINAKAMALAPIT NA LUGAR / APEKTADONG LUGAR" : "NEAREST SAFE ZONE & AFFECTED AREAS";
+    public string AffectedAreaHeaderTagText => IsTagalog ? "MGA APEKTADONG LUGAR" : "AFFECTED AREA SECTORS";
 
     [JsonIgnore]
     public string LanguageButtonLabel => IsTagalog ? "🌐 Tagalog" : "🌐 English";
